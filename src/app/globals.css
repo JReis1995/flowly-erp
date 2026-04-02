@@ -1,0 +1,85 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500&display=swap');
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+@layer base {
+  :root {
+    /* Flowly Brand Colors */
+    --brand-primary: #06B6D4;
+    --brand-success: #10B981;
+    --brand-midnight: #020617;
+    --brand-background: #F8FAFC;
+    --brand-card: #FFFFFF;
+    --brand-border: #E2E8F0;
+    --brand-slate: #64748B;
+    --brand-light: #F1F5F9;
+    --brand-warning: #F59E0B;
+    
+    --background: #F8FAFC;
+    --foreground: #020617;
+  }
+
+  body {
+    color: var(--foreground);
+    background: var(--background);
+    font-family: 'Roboto', sans-serif;
+  }
+}
+
+@layer components {
+  .brand-card {
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    border: 1px solid #E2E8F0;
+  }
+  
+  .font-brand-primary {
+    font-family: 'Inter', sans-serif;
+  }
+  
+  .font-brand-secondary {
+    font-family: 'Roboto', sans-serif;
+  }
+  
+  /* Flowly Color Utilities */
+  .text-brand-primary {
+    color: var(--brand-primary);
+  }
+  .text-brand-success {
+    color: var(--brand-success);
+  }
+  .text-brand-midnight {
+    color: var(--brand-midnight);
+  }
+  .text-brand-slate {
+    color: var(--brand-slate);
+  }
+  .text-brand-warning {
+    color: var(--brand-warning);
+  }
+  
+  .bg-brand-primary {
+    background-color: var(--brand-primary);
+  }
+  .bg-brand-success {
+    background-color: var(--brand-success);
+  }
+  .bg-brand-midnight {
+    background-color: var(--brand-midnight);
+  }
+  .bg-brand-light {
+    background-color: var(--brand-light);
+  }
+  .bg-brand-background {
+    background-color: var(--brand-background);
+  }
+  
+  .border-brand-border {
+    border-color: var(--brand-border);
+  }
+  .border-brand-primary {
+    border-color: var(--brand-primary);
+  }
+}
