@@ -1,9 +1,20 @@
 import Stripe from "stripe";
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2026-03-25.dahlia", // Latest API version
-  typescript: true,
-});
+// Lazy initialization - só cria a instância quando necessário
+let stripeInstance: Stripe | null = null;
+function getStripe(): Stripe {
+  if (!stripeInstance) {
+    const apiKey = process.env.STRIPE_SECRET_KEY;
+    if (!apiKey) {
+      throw new Error("STRIPE_SECRET_KEY não está definida");
+    }
+    stripeInstance = new Stripe(apiKey, {
+      apiVersion: "2026-03-25.dahlia",
+      typescript: true,
+    });
+  }
+  return stripeInstance;
+}
 
 export const getStripeSession = async ({
   priceId,
@@ -20,7 +31,7 @@ export const getStripeSession = async ({
   successUrl: string;
   cancelUrl: string;
 }) => {
-  const session = await stripe.checkout.sessions.create({
+  const session = await getStripe().checkout.sessions.create({
     mode,
     line_items: [
       {

@@ -1,10 +1,21 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 const FROM_GENERAL = "geral@flowly.pt";
 const FROM_COMERCIAL = "geral@flowly.pt";
 const CURRENT_YEAR = new Date().getFullYear();
+
+// Lazy initialization - só cria a instância quando necessário
+let resendInstance: Resend | null = null;
+function getResend(): Resend {
+  if (!resendInstance) {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      throw new Error("RESEND_API_KEY não está definida");
+    }
+    resendInstance = new Resend(apiKey);
+  }
+  return resendInstance;
+}
 
 /** URL pública HTTPS — Gmail/Outlook bloqueiam ou ignoram imagens inline data:/base64 */
 function getEmailLogoUrl(): string {
@@ -119,7 +130,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<{ succes
     `;
 
     console.log('Tentando enviar email de boas-vindas...');
-    const result = await resend.emails.send({
+    const result = await getResend().emails.send({
       from: `Flowly <${FROM_GENERAL}>`,
       to,
       subject: "Bem-vindo ao Flowly ERP! 🎉",
@@ -213,7 +224,7 @@ export async function sendPurchaseThankYouEmail(data: PurchaseThankYouEmailData)
     `;
 
     console.log('Tentando enviar email de agradecimento...');
-    const result = await resend.emails.send({
+    const result = await getResend().emails.send({
       from: `Flowly Comercial <${FROM_COMERCIAL}>`,
       to,
       subject: "Obrigado pela sua compra de Créditos IA! ✨",
