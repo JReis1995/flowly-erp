@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import confetti from "canvas-confetti";
-import { CheckCircle, Sparkles, ArrowRight, Brain, Coins } from "lucide-react";
+import { CheckCircle, Sparkles, ArrowRight, Brain, Coins, Loader2 } from "lucide-react";
 
-export default function CheckoutSuccessPage() {
+function CheckoutSuccessContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
   const [loading, setLoading] = useState(true);
@@ -91,7 +91,7 @@ export default function CheckoutSuccessPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#F8FAFC] to-[#E2E8F0] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#06B6D4] mx-auto mb-4"></div>
+          <Loader2 className="animate-spin h-16 w-16 text-[#06B6D4] mx-auto mb-4" />
           <p className="text-[#020617] text-lg">A confirmar a tua compra...</p>
         </div>
       </div>
@@ -163,5 +163,26 @@ export default function CheckoutSuccessPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Fallback para Suspense
+function CheckoutSuccessFallback() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#F8FAFC] to-[#E2E8F0] flex items-center justify-center">
+      <div className="text-center">
+        <Loader2 className="animate-spin h-16 w-16 text-[#06B6D4] mx-auto mb-4" />
+        <p className="text-[#020617] text-lg">A carregar...</p>
+      </div>
+    </div>
+  );
+}
+
+// Page component com Suspense boundary
+export default function CheckoutSuccessPage() {
+  return (
+    <Suspense fallback={<CheckoutSuccessFallback />}>
+      <CheckoutSuccessContent />
+    </Suspense>
   );
 }

@@ -75,9 +75,9 @@ export default function EquipaPage() {
   }, []);
 
   const fetchStats = useCallback(async () => {
-    const { data } = await getStaffStats();
-    if (data) {
-      setStats(data);
+    const stats = await getStaffStats();
+    if (!stats.error) {
+      setStats(stats);
     }
   }, []);
 

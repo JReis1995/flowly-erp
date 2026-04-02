@@ -107,9 +107,9 @@ export default function ClientesPage() {
   }, [activeTab]);
 
   const fetchStats = useCallback(async () => {
-    const { data } = await getTenantStats();
-    if (data) {
-      setStats(data);
+    const stats = await getTenantStats();
+    if (!stats.error) {
+      setStats(stats);
     }
   }, []);
 

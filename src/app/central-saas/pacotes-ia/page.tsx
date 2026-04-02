@@ -62,9 +62,9 @@ export default function PacotesIAPage() {
   }, []);
 
   const fetchStats = useCallback(async () => {
-    const { data } = await getPacotesStats();
-    if (data) {
-      setStats(data);
+    const stats = await getPacotesStats();
+    if (!stats.error) {
+      setStats(stats);
     }
   }, []);
 
