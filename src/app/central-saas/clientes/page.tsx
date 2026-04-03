@@ -1056,12 +1056,12 @@ export default function ClientesPage() {
                       Reenviar Email
                     </button>
                     <button
-                      onClick={() => handleImpersonate(editingTenant!.id)}
+                      onClick={() => handleImpersonate(editingTenant!)}
                       disabled={!!actionLoading}
                       className="inline-flex items-center gap-2 px-4 py-2 border border-brand-border text-brand-primary rounded-lg font-brand-secondary font-medium hover:bg-brand-primary/10 transition-colors"
                     >
-                      <UserCog className="w-4 h-4" />
-                      Impersonate
+                      <Eye className="w-4 h-4" />
+                      Ver como Cliente
                     </button>
                   </>
                 )}
