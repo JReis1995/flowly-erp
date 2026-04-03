@@ -128,10 +128,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   
   // Helper para verificar se é superadmin por email (fallback)
   // ⚠️ APENAS emails específicos de admin - NÃO usar domínio genérico
-  const isSuperAdminByEmail = (email: string | null): boolean => {
+  const isSuperAdminByEmail = (email: string | null | undefined): boolean => {
     if (!email) return false
     return email === 'jose.reis@flowly.pt' || 
-           email === 'josereis1995@gmail.com' 
+           email === 'josereis1995@gmail.com'
   }
   
   // Inicializar originalUserRole do localStorage no mount

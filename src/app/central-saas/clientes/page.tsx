@@ -64,6 +64,12 @@ interface TenantModalData {
   modulo_rh: boolean;
   modulo_cc: boolean;
   modulo_ia: boolean;
+  modulo_fichas_tecnicas: boolean;
+  modulo_importacao: boolean;
+  modulo_acessos: boolean;
+  modulo_clientes: boolean;
+  modulo_dashboard: boolean;
+  modulo_central_saas: boolean;
   validade_acesso: string;
 }
 
@@ -85,6 +91,12 @@ const defaultTenantData: TenantModalData = {
   modulo_rh: false,
   modulo_cc: false,
   modulo_ia: false,
+  modulo_fichas_tecnicas: false,
+  modulo_importacao: false,
+  modulo_acessos: false,
+  modulo_clientes: false,
+  modulo_dashboard: false,
+  modulo_central_saas: false,
   validade_acesso: '',
 };
 
@@ -1050,6 +1062,60 @@ export default function ClientesPage() {
                       className="w-4 h-4 text-brand-primary border-brand-border rounded focus:ring-brand-primary"
                     />
                     <span className="font-brand-secondary text-sm text-brand-midnight">IA Insight</span>
+                  </label>
+                  <label className="flex items-center gap-3 p-3 border border-brand-border rounded-lg cursor-pointer hover:bg-brand-light transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={modalData.modulo_fichas_tecnicas}
+                      onChange={(e) => setModalData({ ...modalData, modulo_fichas_tecnicas: e.target.checked })}
+                      className="w-4 h-4 text-brand-primary border-brand-border rounded focus:ring-brand-primary"
+                    />
+                    <span className="font-brand-secondary text-sm text-brand-midnight">Fichas Técnicas</span>
+                  </label>
+                  <label className="flex items-center gap-3 p-3 border border-brand-border rounded-lg cursor-pointer hover:bg-brand-light transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={modalData.modulo_importacao}
+                      onChange={(e) => setModalData({ ...modalData, modulo_importacao: e.target.checked })}
+                      className="w-4 h-4 text-brand-primary border-brand-border rounded focus:ring-brand-primary"
+                    />
+                    <span className="font-brand-secondary text-sm text-brand-midnight">Importação & Exportação</span>
+                  </label>
+                  <label className="flex items-center gap-3 p-3 border border-brand-border rounded-lg cursor-pointer hover:bg-brand-light transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={modalData.modulo_acessos}
+                      onChange={(e) => setModalData({ ...modalData, modulo_acessos: e.target.checked })}
+                      className="w-4 h-4 text-brand-primary border-brand-border rounded focus:ring-brand-primary"
+                    />
+                    <span className="font-brand-secondary text-sm text-brand-midnight">Acessos</span>
+                  </label>
+                  <label className="flex items-center gap-3 p-3 border border-brand-border rounded-lg cursor-pointer hover:bg-brand-light transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={modalData.modulo_clientes}
+                      onChange={(e) => setModalData({ ...modalData, modulo_clientes: e.target.checked })}
+                      className="w-4 h-4 text-brand-primary border-brand-border rounded focus:ring-brand-primary"
+                    />
+                    <span className="font-brand-secondary text-sm text-brand-midnight">Clientes & Fornecedores</span>
+                  </label>
+                  <label className="flex items-center gap-3 p-3 border border-brand-border rounded-lg cursor-pointer hover:bg-brand-light transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={modalData.modulo_dashboard}
+                      onChange={(e) => setModalData({ ...modalData, modulo_dashboard: e.target.checked })}
+                      className="w-4 h-4 text-brand-primary border-brand-border rounded focus:ring-brand-primary"
+                    />
+                    <span className="font-brand-secondary text-sm text-brand-midnight">Dashboard</span>
+                  </label>
+                  <label className="flex items-center gap-3 p-3 border border-brand-border rounded-lg cursor-pointer hover:bg-brand-light transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={modalData.modulo_central_saas}
+                      onChange={(e) => setModalData({ ...modalData, modulo_central_saas: e.target.checked })}
+                      className="w-4 h-4 text-brand-primary border-brand-border rounded focus:ring-brand-primary"
+                    />
+                    <span className="font-brand-secondary text-sm text-brand-midnight">Central SaaS</span>
                   </label>
                 </div>
               </div>
