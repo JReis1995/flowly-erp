@@ -9,16 +9,19 @@ const SUPERADMIN_EMAILS = [
   'jose.reis@flowly.pt'
 ]
 
-export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
-  })
+// Lazy initialization do cliente Supabase
+function createMiddlewareClient(request: NextRequest, response: NextResponse) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  if (!supabaseUrl || !supabaseKey) {
+    console.error('[Middleware] Supabase URL ou Key não definidos')
+    return null
+  }
+
+  return createServerClient(
+    supabaseUrl,
+    supabaseKey,
     {
       cookies: {
         get(name: string) {
@@ -29,11 +32,6 @@ export async function middleware(request: NextRequest) {
             name,
             value,
             ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
           })
           response.cookies.set({
             name,
@@ -47,11 +45,6 @@ export async function middleware(request: NextRequest) {
             value: '',
             ...options,
           })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
           response.cookies.set({
             name,
             value: '',
@@ -61,9 +54,26 @@ export async function middleware(request: NextRequest) {
       },
     }
   )
+}
+
+export async function middleware(request: NextRequest) {
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  })
 
   // Proteger rotas /central-saas
   if (request.nextUrl.pathname.startsWith('/central-saas')) {
+    const supabase = createMiddlewareClient(request, response)
+
+    if (!supabase) {
+      // Se Supabase não configurado, redirecionar para login
+      const loginUrl = new URL('/login', request.url)
+      loginUrl.searchParams.set('next', request.nextUrl.pathname + request.nextUrl.search)
+      return NextResponse.redirect(loginUrl)
+    }
+
     const { data: { user }, error: userError } = await supabase.auth.getUser()
 
     if (userError || !user) {
