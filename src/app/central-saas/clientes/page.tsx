@@ -298,6 +298,12 @@ export default function ClientesPage() {
       modulo_rh: tenant.modulo_rh,
       modulo_cc: tenant.modulo_cc,
       modulo_ia: tenant.modulo_ia,
+      modulo_fichas_tecnicas: tenant.modulo_fichas_tecnicas,
+      modulo_importacao: tenant.modulo_importacao,
+      modulo_acessos: tenant.modulo_acessos,
+      modulo_clientes: tenant.modulo_clientes,
+      modulo_dashboard: tenant.modulo_dashboard,
+      modulo_central_saas: tenant.modulo_central_saas,
       validade_acesso: tenant.validade_acesso || '',
     });
     setShowEditModal(true);

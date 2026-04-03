@@ -6,6 +6,7 @@ import { useImpersonate } from '@/stores/impersonateStore'
 import { ImpersonateBanner } from '@/components/impersonate/ImpersonateBanner'
 import { ImpersonateDropdown } from '@/components/impersonate/ImpersonateDropdown'
 import { createBrowserClient } from '@/utils/supabase-browser'
+import type { Session } from '@supabase/supabase-js'
 import { 
   Home, 
   Users, 
@@ -148,23 +149,25 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       const client = createBrowserClient()
       if (!client) return
 
+      let session: Session | null = null
       try {
-        const { data: { session } } = await client.auth.getSession()
+        const { data: { session: s } } = await client.auth.getSession()
+        session = s
         if (!session?.user) return
 
         // Buscar perfil do utilizador com role
         const { data: profile, error } = await client
           .from('profiles')
           .select('nome, role, avatar_url')
-          .eq('id', session.user.id)
+          .eq('id', session!.user.id)
           .single()
 
         if (!error && profile) {
           const userRole = profile.role || 'Utilizador'
           setUserData(prev => ({
             ...prev,
-            name: profile.nome || session.user.email?.split('@')[0] || 'Utilizador',
-            email: session.user.email || '',
+            name: profile.nome || session!.user.email?.split('@')[0] || 'Utilizador',
+            email: session!.user.email || '',
             role: userRole,
             profileImage: profile.avatar_url || null
           }))
@@ -180,16 +183,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         } else {
           console.warn('[Dashboard] Falha ao buscar profile, usando role existente:', userData.role)
           // Fallback por email para detectar superadmin
-          const isAdmin = isSuperAdminByEmail(session.user.email)
+          const isAdmin = isSuperAdminByEmail(session!.user.email)
           const fallbackRole = isAdmin ? 'superadmin' : 
             ((userData.role === 'superadmin' || userData.role === 'developer') ? userData.role : 'Utilizador')
           
-          console.log('[Dashboard] Fallback por email:', session.user.email, '| isAdmin:', isAdmin, '| role:', fallbackRole)
+          console.log('[Dashboard] Fallback por email:', session!.user.email, '| isAdmin:', isAdmin, '| role:', fallbackRole)
           
           setUserData(prev => ({
             ...prev,
-            name: session.user.email?.split('@')[0] || 'Utilizador',
-            email: session.user.email || '',
+            name: session!.user.email?.split('@')[0] || 'Utilizador',
+            email: session!.user.email || '',
             role: fallbackRole
           }))
           
@@ -203,17 +206,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         console.error('Erro ao buscar dados do utilizador:', err)
         if (attempt < 3) {
           setTimeout(() => fetchUserData(attempt + 1), 500)
-        } else {
+        } else if (session?.user) {
           // Fallback: usar dados da sessão + email para verificar superadmin
-          const isAdmin = isSuperAdminByEmail(session.user.email)
+          const isAdmin = isSuperAdminByEmail(session!.user.email)
           const fallbackRole = isAdmin ? 'superadmin' : 'Utilizador'
           
-          console.log('[Dashboard] Fallback por email:', session.user.email, '| isAdmin:', isAdmin)
+          console.log('[Dashboard] Fallback por email:', session!.user.email, '| isAdmin:', isAdmin)
           
           setUserData(prev => ({
             ...prev,
-            name: session.user.email?.split('@')[0] || 'Utilizador',
-            email: session.user.email || '',
+            name: session!.user.email?.split('@')[0] || 'Utilizador',
+            email: session!.user.email || '',
             role: fallbackRole
           }))
           
@@ -300,7 +303,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           const { data: profile } = await client
             .from('profiles')
             .select('tenant_id')
-            .eq('id', session.user.id)
+            .eq('id', session!.user.id)
             .single()
 
           if (profile?.tenant_id) {
@@ -310,7 +313,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             const { data: tenant } = await client
               .from('tenants')
               .select('id')
-              .eq('gestor_email', session.user.email)
+              .eq('gestor_email', session!.user.email)
               .single()
             
             if (tenant) {
@@ -398,13 +401,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         return
       }
 
-      console.log('Email do utilizador:', session.user.email)
+      console.log('Email do utilizador:', session!.user.email)
 
       // Buscar tenant pelo email do gestor
       const { data: tenant, error: tenantError } = await supabase
         .from('tenants')
         .select('id, gestor_email')
-        .eq('gestor_email', session.user.email)
+        .eq('gestor_email', session!.user.email)
         .single()
 
       if (tenantError) {
@@ -414,7 +417,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       console.log('Tenant encontrado:', tenant)
 
       if (!tenant?.id) {
-        alert(`Erro: Tenant não encontrado para o email ${session.user.email}. Verifica se o teu email está registado como gestor de um cliente.`)
+        alert(`Erro: Tenant não encontrado para o email ${session!.user.email}. Verifica se o teu email está registado como gestor de um cliente.`)
         return
       }
 

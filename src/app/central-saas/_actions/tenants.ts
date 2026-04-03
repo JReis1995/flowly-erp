@@ -43,6 +43,12 @@ export interface Tenant {
   modulo_rh: boolean;
   modulo_cc: boolean;
   modulo_ia: boolean;
+  modulo_fichas_tecnicas: boolean;
+  modulo_importacao: boolean;
+  modulo_acessos: boolean;
+  modulo_clientes: boolean;
+  modulo_dashboard: boolean;
+  modulo_central_saas: boolean;
   status: "ativo" | "suspenso" | "cancelado" | "trial";
   validade_acesso: string | null;
   data_registo: string;
@@ -70,6 +76,12 @@ export interface CreateTenantInput {
   modulo_rh?: boolean;
   modulo_cc?: boolean;
   modulo_ia?: boolean;
+  modulo_fichas_tecnicas?: boolean;
+  modulo_importacao?: boolean;
+  modulo_acessos?: boolean;
+  modulo_clientes?: boolean;
+  modulo_dashboard?: boolean;
+  modulo_central_saas?: boolean;
   validade_acesso?: string;
 }
 
