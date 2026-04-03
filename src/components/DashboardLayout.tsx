@@ -31,6 +31,7 @@ import {
   Loader2,
   X,
   Eye,
+  Menu,
 } from 'lucide-react'
 import { useUserPermissions } from '@/hooks/useUserPermissions'
 
@@ -107,6 +108,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [showUserModal, setShowUserModal] = useState(false)
   const [showImpersonateDropdown, setShowImpersonateDropdown] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const supabaseClient = createBrowserClient()
   const supabase = supabaseClient
   
@@ -360,6 +362,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     if (!module.active) return
     
     setActiveModule(module.id)
+    // Fechar menu mobile ao clicar num link
+    setMobileMenuOpen(false)
     if (module.path !== '#') {
       router.push(module.path)
     }
@@ -512,9 +516,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Impersonate Banner - aparece no topo quando ativo */}
       <ImpersonateBanner />
       
+      {/* Overlay para drawer mobile */}
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+      
       <div className={`min-h-screen bg-brand-light flex ${isImpersonateActive || isDemoMode ? 'pt-10' : ''}`}>
-      {/* Sidebar */}
-      <div className={`${sidebarOpen ? 'w-80' : 'w-0'} bg-brand-midnight flex flex-col transition-all duration-300 overflow-hidden`}>
+      {/* Sidebar Desktop - visível apenas em lg+ */}
+      <div className={`${sidebarOpen ? 'w-80' : 'w-0'} hidden lg:flex bg-brand-midnight flex-col transition-all duration-300 overflow-hidden`}>
         {/* Logo */}
         <div className="p-6 border-b border-brand-slate/20">
           <img 
@@ -586,17 +598,101 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
       </div>
 
+      {/* Mobile Drawer Sidebar - Off-canvas para mobile/tablet */}
+      <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-brand-midnight flex flex-col transform transition-transform duration-300 ease-in-out lg:hidden ${
+        mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
+        {/* Header com botão fechar */}
+        <div className="p-4 border-b border-brand-slate/20 flex items-center justify-between">
+          <img 
+            src="https://i.postimg.cc/mrcDM13S/flowly-logo.jpg" 
+            alt="Flowly Logo" 
+            className="h-8 w-auto"
+          />
+          <button
+            onClick={() => setMobileMenuOpen(false)}
+            className="p-2 text-brand-slate hover:text-white hover:bg-brand-slate/20 rounded-lg transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Navigation - mesma estrutura da desktop */}
+        <nav className="flex-1 p-4 overflow-y-auto">
+          {modulesLoading && (
+            <div className="flex items-center justify-center py-4 px-4">
+              <Loader2 className="w-5 h-5 text-brand-primary animate-spin" />
+              <span className="ml-2 text-sm text-brand-slate font-brand-secondary">A carregar módulos...</span>
+            </div>
+          )}
+          
+          {(isImpersonateActive || isDemoMode) && (
+            <div className={`mb-4 px-4 py-2 rounded-lg ${isDemoMode ? 'bg-orange-500/20 border border-orange-500/50' : 'bg-brand-primary/20'}`}>
+              <p className={`text-xs font-brand-secondary font-medium ${isDemoMode ? 'text-orange-700' : 'text-brand-primary'}`}>
+                {isDemoMode ? '🔥 Modo Demo Ativo' : 'Modo Impersonate Ativo'}
+              </p>
+              <p className="text-xs text-brand-slate font-brand-secondary">
+                Módulos: {visibleModules.length > 0 ? visibleModules.join(', ') : 'Nenhum'}
+              </p>
+            </div>
+          )}
+          
+          <ul className="space-y-2">
+            {modules.filter(shouldShowModule).map((module) => {
+              const Icon = module.icon
+              return (
+                <li key={module.id}>
+                  <button
+                    onClick={() => handleModuleClick(module)}
+                    className={`w-full flex items-center px-4 py-3 rounded-lg transition-colors text-left ${
+                      activeModule === module.id
+                        ? 'bg-brand-primary text-white'
+                        : 'text-brand-slate hover:bg-brand-slate/20 hover:text-white'
+                    } ${!module.active ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={!module.active}
+                  >
+                    <Icon className="w-5 h-5 mr-3 flex-shrink-0" />
+                    <span className="font-brand-secondary font-medium whitespace-nowrap">
+                      {module.name}
+                    </span>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </nav>
+
+        {/* Mobile Sidebar Footer */}
+        <div className="p-4 border-t border-brand-slate/20">
+          <button 
+            onClick={handleLogout}
+            className="w-full flex items-center px-4 py-3 text-brand-slate hover:bg-brand-slate/20 rounded-lg transition-colors"
+          >
+            <LogOut className="w-5 h-5 mr-3" />
+            <span className="font-brand-secondary font-medium">Sair</span>
+          </button>
+        </div>
+      </div>
+
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Header */}
         <header className="bg-brand-white border-b border-brand-border px-6 py-4">
           <div className="flex items-center justify-between">
-            {/* Left - Toggle Menu + User Profile */}
+            {/* Left - Hamburger (mobile) + Toggle Sidebar (desktop) + User Profile */}
             <div className="flex items-center space-x-4">
-              {/* Toggle Sidebar Button */}
+              {/* Hamburger Menu - visível apenas em mobile/tablet */}
+              <button
+                onClick={() => setMobileMenuOpen(true)}
+                className="lg:hidden p-2 text-brand-slate hover:text-brand-midnight hover:bg-brand-light rounded-lg transition-colors"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+
+              {/* Toggle Sidebar Button - visível apenas em desktop */}
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-2 text-brand-slate hover:text-brand-midnight hover:bg-brand-light rounded-lg transition-colors"
+                className="hidden lg:block p-2 text-brand-slate hover:text-brand-midnight hover:bg-brand-light rounded-lg transition-colors"
               >
                 {sidebarOpen ? (
                   <ChevronLeft className="w-5 h-5" />

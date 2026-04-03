@@ -33,9 +33,9 @@ export async function getAdminMetrics(): Promise<DashboardMetrics> {
     }
   )
 
-  // Buscar todos os clientes (Equipa_Flowly da Master DB)
+  // Buscar todos os clientes (equipa_flowly da Master DB)
   const { data: clientes, error: clientesError } = await supabase
-    .from('Equipa_Flowly')
+    .from('equipa_flowly')
     .select('*')
 
   if (clientesError) {
@@ -44,7 +44,7 @@ export async function getAdminMetrics(): Promise<DashboardMetrics> {
 
   // Buscar pacotes IA
   const { data: pacotes, error: pacotesError } = await supabase
-    .from('Pacotes_IA')
+    .from('pacotes_ia')
     .select('*')
 
   if (pacotesError) {

@@ -476,7 +476,7 @@ export default function PlanosPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-brand-secondary font-medium text-brand-slate mb-1">
                     Preço Mensal (€) *
@@ -505,7 +505,7 @@ export default function PlanosPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-brand-secondary font-medium text-brand-slate mb-1">
                     <Wrench className="w-3 h-3 inline mr-1" />
@@ -536,7 +536,7 @@ export default function PlanosPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-brand-secondary font-medium text-brand-slate mb-1">
                     <Percent className="w-3 h-3 inline mr-1" />

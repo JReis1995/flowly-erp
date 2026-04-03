@@ -440,7 +440,7 @@ export default function EquipaPage() {
                 <label className="block text-sm font-brand-secondary font-medium text-brand-slate mb-3">
                   Cargo *
                 </label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {(['Owner', 'Admin', 'Dev', 'Support'] as const).map((cargo) => {
                     const Icon = cargoIcons[cargo];
                     return (
