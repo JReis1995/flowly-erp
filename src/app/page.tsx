@@ -1,61 +1,37 @@
-'use client'
-
-export const dynamic = 'force-dynamic'
-
-import { useEffect, useState } from 'react'
-import { createBrowserClient } from '@/utils/supabase-browser'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import DashboardLayout from '@/components/DashboardLayout'
 import { Coins, Mail, Phone, ArrowRight, Star, Zap, Shield, TrendingUp } from 'lucide-react'
 
-interface Empresa {
-  id: string
-  nome: string
-  modulo_logistica_ativo: boolean
-  modulo_condominios_ativo: boolean
+async function getEmpresas() {
+  const cookieStore = await cookies()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (name) => cookieStore.get(name)?.value,
+        set: () => {},
+        remove: () => {},
+      },
+    }
+  )
+
+  try {
+    const { data, error } = await supabase.from('empresas').select('*')
+    if (error) {
+      console.error('Erro ao buscar empresas:', error)
+      return []
+    }
+    return data || []
+  } catch (err) {
+    console.error('Erro:', err)
+    return []
+  }
 }
 
-export default function Home() {
-  const [empresas, setEmpresas] = useState<Empresa[]>([])
-  const [loading, setLoading] = useState(true)
-  const supabase = createBrowserClient()
-
-  useEffect(() => {
-    const fetchEmpresas = async () => {
-      if (!supabase) {
-        console.error('Supabase não configurado')
-        setLoading(false)
-        return
-      }
-
-      try {
-        const { data, error } = await supabase
-          .from('empresas')
-          .select('*')
-        
-        if (error) {
-          console.error('Erro ao buscar empresas:', error)
-        } else {
-          setEmpresas(data || [])
-        }
-      } catch (error) {
-        console.error('Erro:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchEmpresas()
-  }, [])
-
-  if (loading) {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-full">
-          <div className="text-brand-slate">Carregando...</div>
-        </div>
-      </DashboardLayout>
-    )
-  }
+export default async function Home() {
+  const empresas = await getEmpresas()
 
   return (
     <DashboardLayout>
