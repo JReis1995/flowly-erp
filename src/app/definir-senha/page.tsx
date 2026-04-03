@@ -5,18 +5,6 @@ import { useRouter } from 'next/navigation'
 import { Lock, Eye, EyeOff, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
 import { createBrowserClient } from '@/utils/supabase-browser'
 
-// Componente simples de debug para diagnóstico temporário
-function DebugInfo({ info }: { info: Record<string, string> }) {
-  return (
-    <div className="mb-4 p-3 bg-gray-100 rounded text-xs font-mono text-gray-600">
-      <p className="font-bold mb-1">Debug:</p>
-      {Object.entries(info).map(([key, value]) => (
-        <p key={key}>{key}: {value}</p>
-      ))}
-    </div>
-  )
-}
-
 function DefinirSenhaForm() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -31,24 +19,12 @@ function DefinirSenhaForm() {
 
   const [accessToken, setAccessToken] = useState<string | null>(null)
   const [refreshToken, setRefreshToken] = useState<string | null>(null)
-  const [debugInfo, setDebugInfo] = useState<Record<string, string>>({})
 
   // Supabase redireciona com tokens no fragmento (#access_token=...) — não na query string
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    const fullUrl = window.location.href
     const hash = window.location.hash
-    const search = window.location.search
-    
-    // Debug info
-    setDebugInfo({
-      fullUrl: fullUrl.substring(0, 100) + '...',
-      hasHash: hash ? 'yes' : 'no',
-      hashLength: hash.length.toString(),
-      hasSearch: search ? 'yes' : 'no',
-      hashStart: hash.substring(0, 50) + '...'
-    })
 
     // Extrair tokens do hash (#access_token=...)
     if (!hash) {
@@ -61,7 +37,6 @@ function DefinirSenhaForm() {
     const access = hashParams.get('access_token')
     const refresh = hashParams.get('refresh_token')
     const expiresAt = hashParams.get('expires_at')
-    const type = hashParams.get('type')
 
     // Verificar se o token expirou
     if (expiresAt) {
@@ -175,9 +150,6 @@ function DefinirSenhaForm() {
             </div>
           ) : (
             <div className="brand-card p-8">
-              {/* Debug Info - remover após diagnóstico */}
-              <DebugInfo info={debugInfo} />
-              
               {success ? (
                 <div className="text-center">
                   <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
