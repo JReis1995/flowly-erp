@@ -19,10 +19,19 @@ export interface ImpersonateState {
   // Estado
   isActive: boolean
   
+  // Demo Mode - para demonstrações de upsell
+  isDemoMode: boolean
+  demoModules: string[]
+  
   // Ações
   activateImpersonate: (tenantId: string, companyName: string, userRole: string) => { success: boolean; error?: string }
   deactivateImpersonate: () => void
   clearImpersonate: () => void
+  
+  // Ações Demo Mode
+  setDemoMode: (enabled: boolean) => void
+  toggleDemoModule: (module: string) => void
+  setDemoModules: (modules: string[]) => void
 }
 
 // Lista de roles permitidos para ativar Impersonate
@@ -33,6 +42,10 @@ export const useImpersonateStore = create<ImpersonateState>((set, get) => ({
   tenant_id: null,
   nome_da_empresa: null,
   isActive: false,
+  
+  // Demo Mode - inicialmente desativado
+  isDemoMode: false,
+  demoModules: [],
 
   /**
    * Ativa o modo Impersonate
@@ -102,10 +115,40 @@ export const useImpersonateStore = create<ImpersonateState>((set, get) => ({
     set({
       tenant_id: null,
       nome_da_empresa: null,
-      isActive: false
+      isActive: false,
+      isDemoMode: false,
+      demoModules: []
     })
     
     console.log('[Impersonate] Estado limpo.')
+  },
+
+  /**
+   * Ativa/desativa o modo Demo (para demonstrações de upsell)
+   */
+  setDemoMode: (enabled: boolean) => {
+    set({ isDemoMode: enabled })
+    console.log('[Impersonate] Demo Mode:', enabled ? 'Ativado' : 'Desativado')
+  },
+
+  /**
+   * Alterna um módulo na lista de demo
+   */
+  toggleDemoModule: (module: string) => {
+    const current = get().demoModules
+    const newModules = current.includes(module)
+      ? current.filter(m => m !== module)
+      : [...current, module]
+    set({ demoModules: newModules })
+    console.log('[Impersonate] Demo Modules:', newModules)
+  },
+
+  /**
+   * Define a lista completa de módulos demo
+   */
+  setDemoModules: (modules: string[]) => {
+    set({ demoModules: modules })
+    console.log('[Impersonate] Demo Modules definidos:', modules)
   }
 }))
 
@@ -123,11 +166,16 @@ export const useImpersonate = () => {
     isActive: store.isActive,
     tenantId: store.tenant_id,
     companyName: store.nome_da_empresa,
+    isDemoMode: store.isDemoMode,
+    demoModules: store.demoModules,
     
     // Ações
     activateImpersonate: store.activateImpersonate,
     deactivateImpersonate: store.deactivateImpersonate,
-    clearImpersonate: store.clearImpersonate
+    clearImpersonate: store.clearImpersonate,
+    setDemoMode: store.setDemoMode,
+    toggleDemoModule: store.toggleDemoModule,
+    setDemoModules: store.setDemoModules
   }
 }
 

@@ -31,7 +31,7 @@ import {
   X,
   Eye,
 } from 'lucide-react'
-import { useTenantModules } from '@/hooks/useTenantModules'
+import { useUserPermissions } from '@/hooks/useUserPermissions'
 
 interface Module {
   id: string
@@ -65,27 +65,41 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter()
-  const { isActive: isImpersonateActive, clearImpersonate, tenantId } = useImpersonate()
+  const { isActive: isImpersonateActive, clearImpersonate, tenantId, isDemoMode, demoModules } = useImpersonate()
   
-  // Fetch tenant modules for feature toggling
-  const { activeModules, loading: modulesLoading, effectiveTenantId } = useTenantModules()
+  // Fetch permissions with cascade logic (tenant → tenant_users)
+  // DEMO MODE: quando ativo, usa demoModules em vez de buscar à DB
+  const { 
+    visibleModules, 
+    verCreditosIA, 
+    comprarCreditosIA,
+    loading: modulesLoading 
+  } = useUserPermissions({ 
+    isDemoMode, 
+    demoModules 
+  })
   
   // Função para verificar se um módulo deve ser mostrado
   const shouldShowModule = (module: Module): boolean => {
-    // SUPERADMIN: Ver todos os módulos sem restrições
-    if (userData.role === 'superadmin') return true
-    
     // Sempre mostrar se alwaysShow for true (ex: Página Inicial)
     if (module.alwaysShow) return true
     
     // Durante loading, não mostrar módulos controlados (evita flash)
     if (modulesLoading) return false
     
-    // Se não tem moduleName, não mostrar (todos devem ter moduleName)
+    // Se não tem moduleName, não mostrar
     if (!module.moduleName) return false
     
-    // Verificar se o moduleName está nos activeModules
-    return activeModules.includes(module.moduleName)
+    // IMPERSONATE: Superadmin vê como cliente - apenas módulos do cliente
+    if (isImpersonateActive || isDemoMode) {
+      return visibleModules.includes(module.moduleName)
+    }
+    
+    // SUPERADMIN normal (sem impersonate): Ver todos os módulos
+    if (userData.role === 'superadmin') return true
+    
+    // Outros utilizadores: Verificar se está nos módulos visíveis
+    return visibleModules.includes(module.moduleName)
   }
   
   const [activeModule, setActiveModule] = useState('pagina-inicial')
@@ -96,17 +110,41 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const supabase = supabaseClient
   
   // User data state - agora com role real do Supabase
-  const [userData, setUserData] = useState({
-    name: 'João Silva',
-    email: 'joao@flowly.com',
-    role: 'Administrador',
-    profileImage: null as string | null,
-    theme: 'claro' as 'claro' | 'escuro' | 'neutro'
+  const [userData, setUserData] = useState(() => {
+    // Tentar recuperar role do localStorage (persistência temporária)
+    const savedRole = typeof window !== 'undefined' ? localStorage.getItem('flowly_user_role') : null
+    return {
+      name: 'João Silva',
+      email: 'joao@flowly.com',
+      role: savedRole || 'Utilizador',
+      profileImage: null as string | null,
+      theme: 'claro' as 'claro' | 'escuro' | 'neutro'
+    }
   })
   
-  // Buscar dados reais do utilizador logado
+  // Guardar role original separadamente - NUNCA muda durante impersonate
+  // Isso garante que o dropdown de impersonate continua visível
+  const [originalUserRole, setOriginalUserRole] = useState<string>(userData.role)
+  
+  // Helper para verificar se é superadmin por email (fallback)
+  // ⚠️ APENAS emails específicos de admin - NÃO usar domínio genérico
+  const isSuperAdminByEmail = (email: string | null): boolean => {
+    if (!email) return false
+    return email === 'jose.reis@flowly.pt' || 
+           email === 'josereis1995@gmail.com' 
+  }
+  
+  // Inicializar originalUserRole do localStorage no mount
   useEffect(() => {
-    async function fetchUserData() {
+    const savedRole = localStorage.getItem('flowly_user_role')
+    if (savedRole && (savedRole === 'superadmin' || savedRole === 'developer')) {
+      setOriginalUserRole(savedRole)
+    }
+  }, [])
+  
+  // Buscar dados reais do utilizador logado - com retry
+  useEffect(() => {
+    async function fetchUserData(attempt = 1) {
       const client = createBrowserClient()
       if (!client) return
 
@@ -122,24 +160,69 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           .single()
 
         if (!error && profile) {
+          const userRole = profile.role || 'Utilizador'
           setUserData(prev => ({
             ...prev,
             name: profile.nome || session.user.email?.split('@')[0] || 'Utilizador',
             email: session.user.email || '',
-            role: profile.role || 'Utilizador',
+            role: userRole,
             profileImage: profile.avatar_url || null
           }))
+          // Guardar role original (só atualiza se não estiver impersonando)
+          if (!isImpersonateActive) {
+            setOriginalUserRole(userRole)
+            localStorage.setItem('flowly_user_role', userRole)
+          }
+        } else if (attempt < 3) {
+          // Retry após 500ms
+          console.log(`[Dashboard] Retry fetchUserData (${attempt}/3)...`)
+          setTimeout(() => fetchUserData(attempt + 1), 500)
         } else {
-          // Fallback: usar dados da sessão
+          console.warn('[Dashboard] Falha ao buscar profile, usando role existente:', userData.role)
+          // Fallback por email para detectar superadmin
+          const isAdmin = isSuperAdminByEmail(session.user.email)
+          const fallbackRole = isAdmin ? 'superadmin' : 
+            ((userData.role === 'superadmin' || userData.role === 'developer') ? userData.role : 'Utilizador')
+          
+          console.log('[Dashboard] Fallback por email:', session.user.email, '| isAdmin:', isAdmin, '| role:', fallbackRole)
+          
           setUserData(prev => ({
             ...prev,
             name: session.user.email?.split('@')[0] || 'Utilizador',
             email: session.user.email || '',
-            role: 'Utilizador'
+            role: fallbackRole
           }))
+          
+          // Guardar no localStorage e originalUserRole
+          if (!isImpersonateActive) {
+            setOriginalUserRole(fallbackRole)
+            localStorage.setItem('flowly_user_role', fallbackRole)
+          }
         }
       } catch (err) {
         console.error('Erro ao buscar dados do utilizador:', err)
+        if (attempt < 3) {
+          setTimeout(() => fetchUserData(attempt + 1), 500)
+        } else {
+          // Fallback: usar dados da sessão + email para verificar superadmin
+          const isAdmin = isSuperAdminByEmail(session.user.email)
+          const fallbackRole = isAdmin ? 'superadmin' : 'Utilizador'
+          
+          console.log('[Dashboard] Fallback por email:', session.user.email, '| isAdmin:', isAdmin)
+          
+          setUserData(prev => ({
+            ...prev,
+            name: session.user.email?.split('@')[0] || 'Utilizador',
+            email: session.user.email || '',
+            role: fallbackRole
+          }))
+          
+          // Guardar no localStorage
+          if (!isImpersonateActive) {
+            setOriginalUserRole(fallbackRole)
+            localStorage.setItem('flowly_user_role', fallbackRole)
+          }
+        }
       }
     }
 
@@ -426,7 +509,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Impersonate Banner - aparece no topo quando ativo */}
       <ImpersonateBanner />
       
-      <div className={`min-h-screen bg-brand-light flex ${isImpersonateActive ? 'pt-10' : ''}`}>
+      <div className={`min-h-screen bg-brand-light flex ${isImpersonateActive || isDemoMode ? 'pt-10' : ''}`}>
       {/* Sidebar */}
       <div className={`${sidebarOpen ? 'w-80' : 'w-0'} bg-brand-midnight flex flex-col transition-all duration-300 overflow-hidden`}>
         {/* Logo */}
@@ -448,14 +531,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           )}
           
-          {/* Debug info when impersonating */}
-          {isImpersonateActive && effectiveTenantId && (
-            <div className="mb-4 px-4 py-2 bg-brand-primary/20 rounded-lg">
-              <p className="text-xs text-brand-primary font-brand-secondary">
-                Tenant: {effectiveTenantId.slice(0, 8)}...
+          {/* Debug info when impersonating or demo mode */}
+          {(isImpersonateActive || isDemoMode) && (
+            <div className={`mb-4 px-4 py-2 rounded-lg ${isDemoMode ? 'bg-orange-500/20 border border-orange-500/50' : 'bg-brand-primary/20'}`}>
+              <p className={`text-xs font-brand-secondary font-medium ${isDemoMode ? 'text-orange-700' : 'text-brand-primary'}`}>
+                {isDemoMode ? '🔥 Modo Demo Ativo' : 'Modo Impersonate Ativo'}
               </p>
               <p className="text-xs text-brand-slate font-brand-secondary">
-                Módulos: {activeModules.length > 0 ? activeModules.join(', ') : 'Todos (sem restrições)'}
+                Módulos visíveis: {visibleModules.length > 0 ? visibleModules.join(', ') : 'Nenhum'}
+              </p>
+              <p className="text-xs text-brand-slate font-brand-secondary">
+                Ver Créditos: {verCreditosIA ? 'Sim' : 'Não'} | Comprar: {comprarCreditosIA ? 'Sim' : 'Não'}
               </p>
             </div>
           )}
@@ -552,21 +638,25 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
             {/* Right - Credits, Impersonate, Logout */}
             <div className="flex items-center space-x-4">
-              {/* AI Credits - Clickable */}
-              <button
-                onClick={() => setShowBuyCreditsModal(true)}
-                className="flex items-center space-x-2 bg-brand-light px-3 py-2 rounded-lg hover:bg-brand-border transition-colors"
-                title="Clique para comprar mais créditos"
-              >
-                <Coins className="w-5 h-5 text-brand-primary" />
-                <span className="font-brand-secondary font-medium text-brand-midnight">
-                  {creditos} créditos
-                </span>
-                <Plus className="w-4 h-4 text-brand-success" />
-              </button>
+              {/* AI Credits - Only show if user has permission */}
+              {verCreditosIA && (
+                <button
+                  onClick={() => comprarCreditosIA && setShowBuyCreditsModal(true)}
+                  className={`flex items-center space-x-2 bg-brand-light px-3 py-2 rounded-lg transition-colors ${
+                    comprarCreditosIA ? 'hover:bg-brand-border cursor-pointer' : 'cursor-default'
+                  }`}
+                  title={comprarCreditosIA ? "Clique para comprar mais créditos" : "Créditos IA - Consulte o gestor para comprar"}
+                >
+                  <Coins className="w-5 h-5 text-brand-primary" />
+                  <span className="font-brand-secondary font-medium text-brand-midnight">
+                    {creditos} créditos
+                  </span>
+                  {comprarCreditosIA && <Plus className="w-4 h-4 text-brand-success" />}
+                </button>
+              )}
 
-              {/* Impersonate Dropdown - Real, com dados do Supabase */}
-              <ImpersonateDropdown userRole={userData.role} />
+              {/* Impersonate Dropdown - sempre usa role original, nunca do impersonado */}
+              <ImpersonateDropdown userRole={originalUserRole} />
 
               {/* Logout */}
               <button 
