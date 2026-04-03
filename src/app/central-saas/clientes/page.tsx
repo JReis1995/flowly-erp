@@ -178,7 +178,8 @@ export default function ClientesPage() {
       fetchTenants();
       fetchStats();
     } else {
-      alert(`Erro: ${error}`);
+      setToast({ message: `Erro: ${error}`, type: 'error' });
+      setTimeout(() => setToast({ message: '', type: null }), 3000);
     }
     setActionLoading(null);
   };
@@ -212,7 +213,8 @@ export default function ClientesPage() {
       fetchTenants();
       fetchStats();
     } else {
-      alert(`Erro: ${error}`);
+      setToast({ message: `Erro: ${error}`, type: 'error' });
+      setTimeout(() => setToast({ message: '', type: null }), 3000);
     }
     setActionLoading(null);
   };
@@ -248,7 +250,8 @@ export default function ClientesPage() {
       setModalData(defaultTenantData);
       fetchTenants();
     } else {
-      alert(`Erro: ${error}`);
+      setToast({ message: `Erro: ${error}`, type: 'error' });
+      setTimeout(() => setToast({ message: '', type: null }), 3000);
     }
     setActionLoading(null);
   };
@@ -285,11 +288,12 @@ export default function ClientesPage() {
     setActionLoading(`email_${tenantId}`);
     const { success, error } = await resendWelcomeEmail(tenantId);
     if (success) {
-      alert('Email reenviado com sucesso!');
+      setToast({ message: 'Email reenviado com sucesso!', type: 'success' });
     } else {
-      alert(`Erro: ${error}`);
+      setToast({ message: `Erro ao reenviar: ${error}`, type: 'error' });
     }
     setActionLoading(null);
+    setTimeout(() => setToast({ message: '', type: null }), 3000);
   };
 
   // Impersonate

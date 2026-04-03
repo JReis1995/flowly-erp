@@ -78,17 +78,14 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<{ succes
 
     const html = `
       <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
-        <div style="background: linear-gradient(135deg, #06B6D4 0%, #0891B2 100%); padding: 40px 30px; text-align: center;">
-          <!-- Logo Flowly Correto -->
-          <div style="margin-bottom: 15px;">
-            <span style="color: #ffffff; font-weight: 800; font-size: 42px; font-family: 'Inter', sans-serif; letter-spacing: 2px; font-style: italic; text-shadow: 0 2px 4px rgba(0,0,0,0.1); display: block;">FLOWLY</span>
-            <div style="width: 180px; height: 4px; background: linear-gradient(90deg, #10B981 0%, #06B6D4 100%); margin: 8px auto; border-radius: 2px;"></div>
-            <span style="color: rgba(255,255,255,0.95); font-weight: 500; font-size: 11px; font-family: 'Inter', sans-serif; letter-spacing: 1.5px; text-transform: uppercase; display: block; margin-top: 8px;">Onde o fluxo encontra a precis&atilde;o</span>
-          </div>
-          <h1 style="color: #ffffff; margin: 20px 0 0 0; font-size: 24px; font-weight: 600;">Bem-vindo &agrave; Flowly!</h1>
+        <!-- Header Profissional -->
+        <div style="background: #ffffff; padding: 30px; text-align: center; border-bottom: 1px solid #e2e8f0;">
+          <span style="color: #06B6D4; font-weight: 800; font-size: 36px; font-family: 'Inter', sans-serif; letter-spacing: 3px; font-style: italic;">FLOWLY</span>
         </div>
         
         <div style="padding: 40px 30px; background: #ffffff;">
+          <h1 style="color: #020617; margin: 0 0 25px 0; font-size: 24px; font-weight: 600;">Bem-vindo &agrave; Flowly!</h1>
+          
           <p style="color: #020617; font-size: 18px; margin-bottom: 20px;">Olá ${nome},</p>
           
           <p style="color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
@@ -107,10 +104,6 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<{ succes
               Definir Palavra-passe
             </a>
           </div>
-          
-          <p style="color: #64748b; font-size: 14px; text-align: center; margin-bottom: 30px;">
-            Ou copie este link: ${resetPasswordLink}
-          </p>
           ` : ""}
           
           <div style="background: #F8FAFC; border-left: 4px solid #06B6D4; padding: 20px; margin: 30px 0;">
@@ -135,7 +128,6 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<{ succes
         ${EMAIL_FOOTER(FROM_GENERAL)}
     `;
 
-    console.log('Tentando enviar email de boas-vindas...');
     const result = await getResend().emails.send({
       from: `Flowly <${FROM_GENERAL}>`,
       to,
@@ -143,17 +135,12 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<{ succes
       html,
     });
 
-    console.log('Resultado Resend:', result);
-
     if (result.error) {
-      console.error("Erro ao enviar email de boas-vindas:", result.error);
       return { success: false, error: result.error.message };
     }
 
-    console.log(`[Email] Boas-vindas enviado para ${to}`);
     return { success: true };
   } catch (error: any) {
-    console.error("Erro ao enviar email de boas-vindas:", error);
     return { success: false, error: error.message };
   }
 }
@@ -167,18 +154,14 @@ export async function sendPurchaseThankYouEmail(data: PurchaseThankYouEmailData)
 
     const html = `
       <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
-        <div style="background: linear-gradient(135deg, #06B6D4 0%, #10B981 100%); padding: 40px 30px; text-align: center;">
-          <!-- Logo Flowly Correto -->
-          <div style="margin-bottom: 15px;">
-            <span style="color: #ffffff; font-weight: 800; font-size: 42px; font-family: 'Inter', sans-serif; letter-spacing: 2px; font-style: italic; text-shadow: 0 2px 4px rgba(0,0,0,0.1); display: block;">FLOWLY</span>
-            <div style="width: 180px; height: 4px; background: linear-gradient(90deg, #10B981 0%, #06B6D4 100%); margin: 8px auto; border-radius: 2px;"></div>
-            <span style="color: rgba(255,255,255,0.95); font-weight: 500; font-size: 11px; font-family: 'Inter', sans-serif; letter-spacing: 1.5px; text-transform: uppercase; display: block; margin-top: 8px;">Onde o fluxo encontra a precis&atilde;o</span>
-          </div>
-          <h1 style="color: #ffffff; margin: 20px 0 0 0; font-size: 24px; font-weight: 600;">Obrigado pela sua compra!</h1>
-          <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">Cr&eacute;ditos IA adicionados &agrave; sua conta</p>
+        <!-- Header Profissional -->
+        <div style="background: #ffffff; padding: 30px; text-align: center; border-bottom: 1px solid #e2e8f0;">
+          <span style="color: #06B6D4; font-weight: 800; font-size: 36px; font-family: 'Inter', sans-serif; letter-spacing: 3px; font-style: italic;">FLOWLY</span>
         </div>
         
         <div style="padding: 40px 30px; background: #ffffff;">
+          <h1 style="color: #020617; margin: 0 0 25px 0; font-size: 24px; font-weight: 600;">Obrigado pela sua compra!</h1>
+          
           <p style="color: #020617; font-size: 18px; margin-bottom: 20px;">Olá ${nome},</p>
           
           <p style="color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 30px;">
@@ -234,7 +217,6 @@ export async function sendPurchaseThankYouEmail(data: PurchaseThankYouEmailData)
         ${EMAIL_FOOTER(FROM_COMERCIAL)}
     `;
 
-    console.log('Tentando enviar email de agradecimento...');
     const result = await getResend().emails.send({
       from: `Flowly Comercial <${FROM_COMERCIAL}>`,
       to,
@@ -242,17 +224,12 @@ export async function sendPurchaseThankYouEmail(data: PurchaseThankYouEmailData)
       html,
     });
 
-    console.log('Resultado Resend:', result);
-
     if (result.error) {
-      console.error("Erro ao enviar email de agradecimento:", result.error);
       return { success: false, error: result.error.message };
     }
 
-    console.log(`[Email] Agradecimento de compra enviado para ${to}`);
     return { success: true };
   } catch (error: any) {
-    console.error("Erro ao enviar email de agradecimento:", error);
     return { success: false, error: error.message };
   }
 }
