@@ -21,7 +21,8 @@ function getResend(): Resend {
 function getEmailLogoUrl(): string {
   const custom = process.env.NEXT_PUBLIC_EMAIL_LOGO_URL?.trim();
   if (custom) return custom;
-  return "https://i.postimg.cc/mrcDM13S/flowly-logo.jpg";
+  // Usar logo do site flowly.pt (mais fiável que postimg.cc)
+  return "https://www.flowly.pt/flowly-logo.jpg";
 }
 
 // Assinatura transversal para todos os emails

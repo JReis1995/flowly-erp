@@ -22,8 +22,11 @@ import {
   X,
   ChevronDown,
   Loader2,
-  Shield
+  Shield,
+  ArrowLeft,
+  Home
 } from 'lucide-react';
+import Link from 'next/link';
 import { 
   Tenant, 
   getTenants, 
@@ -302,23 +305,32 @@ export default function ClientesPage() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="mb-8 flex items-start justify-between">
-        <div>
-          <h1 className="font-brand-primary font-bold text-3xl text-brand-midnight">
-            Gestao de Clientes
-          </h1>
-          <p className="text-brand-slate mt-2 font-brand-secondary">
-            {stats.total} clientes no sistema • {stats.ativos} ativos • {stats.suspensos} suspensos
-          </p>
-        </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="inline-flex items-center gap-2 px-6 py-3 bg-brand-primary text-white rounded-lg font-brand-secondary font-medium hover:bg-brand-primary/90 transition-colors shadow-brand"
+      {/* Header com botão voltar */}
+      <div className="mb-8">
+        <Link 
+          href="/central-saas"
+          className="inline-flex items-center gap-2 text-brand-slate hover:text-brand-primary transition-colors mb-4 font-brand-secondary text-sm"
         >
-          <Plus className="w-5 h-5" />
-          Novo Cliente
-        </button>
+          <ArrowLeft className="w-4 h-4" />
+          Voltar ao Central SaaS
+        </Link>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="font-brand-primary font-bold text-3xl text-brand-midnight">
+              Gestao de Clientes
+            </h1>
+            <p className="text-brand-slate mt-2 font-brand-secondary">
+              {stats.total} clientes no sistema • {stats.ativos} ativos • {stats.suspensos} suspensos
+            </p>
+          </div>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-brand-primary text-white rounded-lg font-brand-secondary font-medium hover:bg-brand-primary/90 transition-colors shadow-brand"
+          >
+            <Plus className="w-5 h-5" />
+            Novo Cliente
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
