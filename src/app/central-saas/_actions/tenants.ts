@@ -6,6 +6,22 @@ import { revalidatePath } from "next/cache";
 import { checkAdminAccess } from "./auth";
 import { sendWelcomeEmail } from "@/lib/email";
 
+// Helper para obter URL base da aplicação (produção vs desenvolvimento)
+function getAppUrl(): string {
+  // Prioridade: env var > vercel url > localhost
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, ''); // Remove trailing slash
+  }
+  
+  // Se estiver no Vercel, usar o URL do deployment
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  
+  // Fallback para desenvolvimento
+  return 'http://localhost:3000';
+}
+
 // Tipos
 export interface Tenant {
   id: string;
@@ -220,7 +236,7 @@ export async function createTenant(
     type: 'magiclink',
     email: input.gestor_email,
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/definir-senha`,
+      redirectTo: `${getAppUrl()}/definir-senha`,
     },
   });
 
@@ -229,7 +245,7 @@ export async function createTenant(
   }
 
   // Extrair tokens do link gerado
-  let resetPasswordLink = `${process.env.NEXT_PUBLIC_APP_URL}/definir-senha`;
+  let resetPasswordLink = `${getAppUrl()}/definir-senha`;
   if (linkData?.properties?.action_link) {
     // O link do Supabase contém access_token e refresh_token
     resetPasswordLink = linkData.properties.action_link;
@@ -412,7 +428,7 @@ export async function resendWelcomeEmail(
     return { success: false, error: `Erro ao gerar link: ${linkError.message}` };
   }
 
-  const resetPasswordLink = linkData?.properties?.action_link || `${process.env.NEXT_PUBLIC_APP_URL}/definir-senha`;
+  const resetPasswordLink = linkData?.properties?.action_link || `${getAppUrl()}/definir-senha`;
 
   // Enviar email de boas-vindas real via Resend com link do Supabase
   const { success, error: emailError } = await sendWelcomeEmail({
