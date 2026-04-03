@@ -78,15 +78,13 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<{ succes
 
     const html = `
       <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
-        <div style="background: #06B6D4; padding: 30px; text-align: center;">
-          <!-- Logo em texto/SVG inline para evitar bloqueio de imagens externas -->
-          <div style="margin-bottom: 15px; display: inline-block;">
-            <div style="background: linear-gradient(135deg, #10B981 0%, #06B6D4 100%); border-radius: 12px; padding: 12px 20px; display: inline-flex; align-items: center; gap: 10px;">
-              <div style="width: 32px; height: 32px; background: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px;">⚡</div>
-              <span style="color: #ffffff; font-weight: 700; font-size: 24px; font-family: 'Inter', sans-serif; letter-spacing: -0.5px;">Flowly</span>
-            </div>
+        <div style="background: linear-gradient(135deg, #06B6D4 0%, #0891B2 100%); padding: 40px 30px; text-align: center;">
+          <!-- Logo Flowly em texto estilizado -->
+          <div style="margin-bottom: 20px;">
+            <span style="color: #ffffff; font-weight: 800; font-size: 36px; font-family: 'Inter', sans-serif; letter-spacing: -1px; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">Flowly</span>
+            <span style="color: rgba(255,255,255,0.8); font-weight: 400; font-size: 14px; display: block; margin-top: 5px; font-family: 'Inter', sans-serif;">ERP</span>
           </div>
-          <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">Bem-vindo &agrave; Flowly!</h1>
+          <h1 style="color: #ffffff; margin: 15px 0 0 0; font-size: 26px; font-weight: 600;">Bem-vindo &agrave; Flowly!</h1>
         </div>
         
         <div style="padding: 40px 30px; background: #ffffff;">
@@ -168,15 +166,13 @@ export async function sendPurchaseThankYouEmail(data: PurchaseThankYouEmailData)
 
     const html = `
       <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
-        <div style="background: linear-gradient(135deg, #06B6D4 0%, #10B981 100%); padding: 30px; text-align: center;">
-          <!-- Logo em texto/SVG inline para evitar bloqueio de imagens externas -->
-          <div style="margin-bottom: 15px; display: inline-block;">
-            <div style="background: white; border-radius: 12px; padding: 12px 20px; display: inline-flex; align-items: center; gap: 10px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-              <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #10B981 0%, #06B6D4 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px;">⚡</div>
-              <span style="color: #020617; font-weight: 700; font-size: 24px; font-family: 'Inter', sans-serif; letter-spacing: -0.5px;">Flowly</span>
-            </div>
+        <div style="background: linear-gradient(135deg, #06B6D4 0%, #10B981 100%); padding: 40px 30px; text-align: center;">
+          <!-- Logo Flowly em texto estilizado -->
+          <div style="margin-bottom: 20px;">
+            <span style="color: #ffffff; font-weight: 800; font-size: 36px; font-family: 'Inter', sans-serif; letter-spacing: -1px; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">Flowly</span>
+            <span style="color: rgba(255,255,255,0.8); font-weight: 400; font-size: 14px; display: block; margin-top: 5px; font-family: 'Inter', sans-serif;">ERP</span>
           </div>
-          <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">Obrigado pela sua compra!</h1>
+          <h1 style="color: #ffffff; margin: 15px 0 0 0; font-size: 26px; font-weight: 600;">Obrigado pela sua compra!</h1>
           <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">Cr&eacute;ditos IA adicionados &agrave; sua conta</p>
         </div>
         

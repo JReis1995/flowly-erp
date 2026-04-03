@@ -97,6 +97,7 @@ export default function ClientesPage() {
   const [modalData, setModalData] = useState<TenantModalData>(defaultTenantData);
   const [stats, setStats] = useState({ total: 0, ativos: 0, suspensos: 0, trial: 0, creditosTotais: 0 });
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | null }>({ message: '', type: null });
 
   // Buscar dados
   const fetchTenants = useCallback(async () => {
@@ -298,13 +299,36 @@ export default function ClientesPage() {
     if (success && redirectUrl) {
       window.open(redirectUrl, '_blank');
     } else {
-      alert(`Erro: ${error}`);
+      setToast({ message: `Erro: ${error}`, type: 'error' });
+      setTimeout(() => setToast({ message: '', type: null }), 3000);
     }
     setActionLoading(null);
   };
 
   return (
     <div className="max-w-7xl mx-auto">
+      {/* Toast Notification */}
+      {toast.type && (
+        <div className={`fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-lg flex items-center gap-3 transition-all ${
+          toast.type === 'success' 
+            ? 'bg-brand-success text-white' 
+            : 'bg-red-500 text-white'
+        }`}>
+          {toast.type === 'success' ? (
+            <CheckCircle className="w-5 h-5" />
+          ) : (
+            <AlertTriangle className="w-5 h-5" />
+          )}
+          <span className="font-brand-secondary font-medium">{toast.message}</span>
+          <button 
+            onClick={() => setToast({ message: '', type: null })}
+            className="ml-2 hover:opacity-80"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Header com botão voltar */}
       <div className="mb-8">
         <Link 
