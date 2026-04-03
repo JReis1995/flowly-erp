@@ -108,11 +108,25 @@ export function useTenantModules(): UseTenantModulesReturn {
           setError(tenantError.message)
           setActiveModules([])
         } else if (tenant?.active_modules) {
-          console.log('[useTenantModules] Módulos ativos encontrados:', tenant.active_modules)
-          setActiveModules(tenant.active_modules)
+          console.log('[useTenantModules] Módulos brutos da DB:', tenant.active_modules)
+          
+          // Converter para array - suporta formato objeto {modulo: true} ou array
+          let modulesArray: string[] = []
+          
+          if (Array.isArray(tenant.active_modules)) {
+            // Já é array
+            modulesArray = tenant.active_modules
+          } else if (typeof tenant.active_modules === 'object' && tenant.active_modules !== null) {
+            // É objeto {modulo: true/false} - converter para array
+            modulesArray = Object.entries(tenant.active_modules)
+              .filter(([key, value]) => value === true)
+              .map(([key]) => key)
+          }
+          
+          console.log('[useTenantModules] Módulos ativos convertidos:', modulesArray)
+          setActiveModules(modulesArray)
         } else {
-          console.log('[useTenantModules] Nenhum módulo configurado, permitindo todos')
-          // Se não houver configuração, retorna array vazio (será tratado como "permitir todos" no componente)
+          console.log('[useTenantModules] Nenhum módulo configurado')
           setActiveModules([])
         }
       } catch (err) {
