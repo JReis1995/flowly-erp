@@ -45,7 +45,7 @@ interface Module {
 
 const modules: Module[] = [
   { id: 'pagina-inicial', name: 'Página Inicial', icon: Home, active: true, path: '/', alwaysShow: true },
-  { id: 'central-saas', name: 'Central SaaS', icon: Home, active: true, path: '/central-saas', moduleName: 'central_saas', alwaysShow: true },
+  { id: 'central-saas', name: 'Central SaaS', icon: Home, active: true, path: '/central-saas', moduleName: 'central_saas' },
   { id: 'colaboradores', name: 'Colaboradores', icon: Users, active: true, path: '/colaboradores', moduleName: 'rh' },
   { id: 'acessos', name: 'Acessos', icon: Key, active: true, path: '/acessos', moduleName: 'acessos' },
   { id: 'clientes-fornecedores', name: 'Clientes & Fornecedores', icon: Users, active: true, path: '/clientes-fornecedores', moduleName: 'clientes' },
@@ -72,14 +72,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   
   // Função para verificar se um módulo deve ser mostrado
   const shouldShowModule = (module: Module): boolean => {
-    // Sempre mostrar se alwaysShow for true
+    // SUPERADMIN: Ver todos os módulos sem restrições
+    if (userData.role === 'superadmin') return true
+    
+    // Sempre mostrar se alwaysShow for true (ex: Página Inicial)
     if (module.alwaysShow) return true
     
-    // Se não tem moduleName, mostrar por padrão (compatibilidade)
-    if (!module.moduleName) return true
+    // Durante loading, não mostrar módulos controlados (evita flash)
+    if (modulesLoading) return false
     
-    // Se activeModules está vazio (sem configuração), mostrar todos
-    if (activeModules.length === 0) return true
+    // Se não tem moduleName, não mostrar (todos devem ter moduleName)
+    if (!module.moduleName) return false
     
     // Verificar se o moduleName está nos activeModules
     return activeModules.includes(module.moduleName)

@@ -99,7 +99,7 @@ export function useTenantModules(): UseTenantModulesReturn {
         
         const { data: tenant, error: tenantError } = await client
           .from('tenants')
-          .select('modulo_logistica, modulo_condominios, modulo_frota, modulo_rh, modulo_cc, modulo_ia')
+          .select('modulo_logistica, modulo_condominios, modulo_frota, modulo_rh, modulo_cc, modulo_ia, modulo_fichas_tecnicas, modulo_importacao, modulo_acessos, modulo_clientes, modulo_dashboard, modulo_central_saas')
           .eq('id', effectiveTenantId)
           .single()
 
@@ -119,6 +119,12 @@ export function useTenantModules(): UseTenantModulesReturn {
           if (tenant.modulo_rh) modulesArray.push('rh')
           if (tenant.modulo_cc) modulesArray.push('cc')
           if (tenant.modulo_ia) modulesArray.push('ia')
+          if (tenant.modulo_fichas_tecnicas) modulesArray.push('fichas_tecnicas')
+          if (tenant.modulo_importacao) modulesArray.push('importacao')
+          if (tenant.modulo_acessos) modulesArray.push('acessos')
+          if (tenant.modulo_clientes) modulesArray.push('clientes')
+          if (tenant.modulo_dashboard) modulesArray.push('dashboard')
+          if (tenant.modulo_central_saas) modulesArray.push('central_saas')
           
           console.log('[useTenantModules] Módulos ativos convertidos:', modulesArray)
           setActiveModules(modulesArray)
