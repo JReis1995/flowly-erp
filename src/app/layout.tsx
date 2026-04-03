@@ -34,7 +34,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col font-brand-secondary">
         {children}
-        <DebugLogger />
-      html>
+      </body>
+    </html>
   );
 }
