@@ -1,5 +1,9 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+import { useImpersonate } from '@/stores/impersonateStore';
+import { createBrowserClient } from '@/utils/supabase-browser';
+
 import { useState, useEffect, useCallback } from 'react';
 import { 
   Users, 
@@ -12,6 +16,7 @@ import {
   AlertTriangle,
   Brain,
   Eye,
+  Pencil,
   Mail,
   UserCog,
   CreditCard,
@@ -85,6 +90,9 @@ const defaultTenantData: TenantModalData = {
 
 // Componente principal
 export default function ClientesPage() {
+  const router = useRouter();
+  const { activateImpersonate } = useImpersonate();
+  
   // Estados
   const [activeTab, setActiveTab] = useState<'ativos' | 'suspensos'>('ativos');
   const [searchTerm, setSearchTerm] = useState('');
@@ -296,16 +304,49 @@ export default function ClientesPage() {
     setTimeout(() => setToast({ message: '', type: null }), 3000);
   };
 
-  // Impersonate
-  const handleImpersonate = async (tenantId: string) => {
-    setActionLoading(`impersonate_${tenantId}`);
-    const { success, redirectUrl, error } = await impersonateTenant(tenantId);
-    if (success && redirectUrl) {
-      window.open(redirectUrl, '_blank');
-    } else {
-      setToast({ message: `Erro: ${error}`, type: 'error' });
-      setTimeout(() => setToast({ message: '', type: null }), 3000);
+  // Impersonate - Sprint 4: Usar store do cliente para ativar e redirecionar
+  const handleImpersonate = async (tenant: Tenant) => {
+    setActionLoading(`impersonate_${tenant.id}`);
+    
+    // Buscar role do utilizador atual (superadmin/developer necessário)
+    const client = createBrowserClient();
+    if (!client) {
+      setToast({ message: 'Erro: Cliente não inicializado', type: 'error' });
+      setActionLoading(null);
+      return;
     }
+    
+    try {
+      const { data: { session } } = await client.auth.getSession();
+      if (!session?.user) {
+        setToast({ message: 'Erro: Não autenticado', type: 'error' });
+        setActionLoading(null);
+        return;
+      }
+      
+      // Buscar role do profile
+      const { data: profile } = await client
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+      
+      const userRole = profile?.role || 'user';
+      
+      // Ativar impersonate via store (Sprint 1)
+      const result = activateImpersonate(tenant.id, tenant.nome_empresa, userRole);
+      
+      if (result.success) {
+        // Redirecionar para dashboard do cliente
+        router.push('/dashboard');
+      } else {
+        setToast({ message: `Erro: ${result.error}`, type: 'error' });
+      }
+    } catch (err) {
+      console.error('[Impersonate] Erro:', err);
+      setToast({ message: 'Erro ao ativar modo visualização', type: 'error' });
+    }
+    
     setActionLoading(null);
   };
 
@@ -642,18 +683,20 @@ export default function ClientesPage() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        {/* Impersonate - Eye icon */}
                         <button
-                          onClick={() => handleImpersonate(tenant.id)}
+                          onClick={() => handleImpersonate(tenant)}
                           disabled={actionLoading === `impersonate_${tenant.id}`}
-                          className="p-2 text-brand-slate hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
-                          title="Impersonate"
+                          className="p-2 text-brand-slate hover:text-[#FACC15] hover:bg-[#FACC15]/10 rounded-lg transition-colors"
+                          title="Ver como Cliente (Impersonate)"
                         >
                           {actionLoading === `impersonate_${tenant.id}` ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
                           ) : (
-                            <UserCog className="w-4 h-4" />
+                            <Eye className="w-4 h-4" />
                           )}
                         </button>
+                        {/* Reenviar Email - Mail icon */}
                         <button
                           onClick={() => handleResendEmail(tenant.id)}
                           disabled={actionLoading === `email_${tenant.id}`}
@@ -666,12 +709,13 @@ export default function ClientesPage() {
                             <Mail className="w-4 h-4" />
                           )}
                         </button>
+                        {/* Editar - Pencil icon */}
                         <button
                           onClick={() => openEditModal(tenant)}
-                          className="p-2 text-brand-slate hover:text-brand-midnight hover:bg-brand-light rounded-lg transition-colors"
-                          title="Editar"
+                          className="p-2 text-brand-slate hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
+                          title="Editar Cliente"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Pencil className="w-4 h-4" />
                         </button>
                       </div>
                     </td>

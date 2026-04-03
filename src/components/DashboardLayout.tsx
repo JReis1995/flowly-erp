@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { useImpersonate } from '@/stores/impersonateStore'
+import { ImpersonateBanner } from '@/components/impersonate/ImpersonateBanner'
+import { ImpersonateDropdown } from '@/components/impersonate/ImpersonateDropdown'
 import { createBrowserClient } from '@/utils/supabase-browser'
 import { 
   Home, 
@@ -25,7 +28,8 @@ import {
   Plus,
   ShoppingCart,
   Loader2,
-  X
+  X,
+  Eye,
 } from 'lucide-react'
 
 interface Module {
@@ -58,6 +62,7 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter()
+  const { isActive: isImpersonateActive, clearImpersonate, tenantId } = useImpersonate()
   const [activeModule, setActiveModule] = useState('pagina-inicial')
   const [showUserModal, setShowUserModal] = useState(false)
   const [showImpersonateDropdown, setShowImpersonateDropdown] = useState(false)
@@ -65,7 +70,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const supabaseClient = createBrowserClient()
   const supabase = supabaseClient
   
-  // User data state
+  // User data state - agora com role real do Supabase
   const [userData, setUserData] = useState({
     name: 'João Silva',
     email: 'joao@flowly.com',
@@ -73,6 +78,48 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     profileImage: null as string | null,
     theme: 'claro' as 'claro' | 'escuro' | 'neutro'
   })
+  
+  // Buscar dados reais do utilizador logado
+  useEffect(() => {
+    async function fetchUserData() {
+      const client = createBrowserClient()
+      if (!client) return
+
+      try {
+        const { data: { session } } = await client.auth.getSession()
+        if (!session?.user) return
+
+        // Buscar perfil do utilizador com role
+        const { data: profile, error } = await client
+          .from('profiles')
+          .select('nome, role, avatar_url')
+          .eq('id', session.user.id)
+          .single()
+
+        if (!error && profile) {
+          setUserData(prev => ({
+            ...prev,
+            name: profile.nome || session.user.email?.split('@')[0] || 'Utilizador',
+            email: session.user.email || '',
+            role: profile.role || 'Utilizador',
+            profileImage: profile.avatar_url || null
+          }))
+        } else {
+          // Fallback: usar dados da sessão
+          setUserData(prev => ({
+            ...prev,
+            name: session.user.email?.split('@')[0] || 'Utilizador',
+            email: session.user.email || '',
+            role: 'Utilizador'
+          }))
+        }
+      } catch (err) {
+        console.error('Erro ao buscar dados do utilizador:', err)
+      }
+    }
+
+    fetchUserData()
+  }, [])
   
   // Two-step validation state for sensitive data
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false)
@@ -123,49 +170,67 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     }
   }, [showBuyCreditsModal])
 
-  // Buscar créditos reais do Supabase
+  // Buscar créditos reais do Supabase - AGORA COM IMPERSONATE AWARENESS
   useEffect(() => {
     async function fetchCreditos() {
       const client = createBrowserClient()
       if (!client) return
 
       try {
-        // Buscar sessão do usuário
-        const { data: { session } } = await client.auth.getSession()
-        if (!session?.user) return
-
-        // Buscar tenant_id do perfil do usuário
-        const { data: profile } = await client
-          .from('profiles')
-          .select('tenant_id')
-          .eq('id', session.user.id)
-          .single()
-
-        if (!profile?.tenant_id) {
-          // Fallback: buscar tenant pelo email do gestor
-          const { data: tenant } = await client
-            .from('tenants')
-            .select('id, creditos_ia')
-            .eq('gestor_email', session.user.email)
-            .single()
-
-          if (tenant) {
-            setCreditos(tenant.creditos_ia || 0)
-          }
+        // SPRINT 3: Determinar o tenant_id efetivo (impersonate ou real)
+        let effectiveTenantId: string | null = null
+        
+        if (isImpersonateActive && tenantId) {
+          // Modo Impersonate: usar o tenant_id do estado
+          effectiveTenantId = tenantId
+          console.log('[Dashboard] Modo Impersonate ativo. Tenant:', effectiveTenantId)
         } else {
-          // Buscar créditos do tenant
-          const { data: tenant } = await client
-            .from('tenants')
-            .select('creditos_ia')
-            .eq('id', profile.tenant_id)
+          // Modo Normal: buscar tenant_id do utilizador logado
+          const { data: { session } } = await client.auth.getSession()
+          if (!session?.user) return
+
+          const { data: profile } = await client
+            .from('profiles')
+            .select('tenant_id')
+            .eq('id', session.user.id)
             .single()
 
-          if (tenant) {
-            setCreditos(tenant.creditos_ia || 0)
+          if (profile?.tenant_id) {
+            effectiveTenantId = profile.tenant_id
+          } else {
+            // Fallback: buscar pelo email
+            const { data: tenant } = await client
+              .from('tenants')
+              .select('id')
+              .eq('gestor_email', session.user.email)
+              .single()
+            
+            if (tenant) {
+              effectiveTenantId = tenant.id
+            }
           }
         }
+
+        if (!effectiveTenantId) {
+          console.warn('[Dashboard] Nenhum tenant_id efetivo encontrado')
+          setCreditos(0)
+          return
+        }
+
+        // Buscar créditos do tenant efetivo
+        const { data: tenant, error } = await client
+          .from('tenants')
+          .select('creditos_ia')
+          .eq('id', effectiveTenantId)
+          .single()
+
+        if (error) {
+          console.error('[Dashboard] Erro ao buscar créditos:', error)
+        } else if (tenant) {
+          setCreditos(tenant.creditos_ia || 0)
+        }
       } catch (error) {
-        console.error('Erro ao buscar créditos:', error)
+        console.error('[Dashboard] Erro ao buscar créditos:', error)
       } finally {
         setCreditosLoading(false)
       }
@@ -178,7 +243,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     window.addEventListener('focus', handleFocus)
 
     return () => window.removeEventListener('focus', handleFocus)
-  }, [])
+  }, [isImpersonateActive, tenantId]) // Recarregar quando impersonate mudar
 
   const handleModuleClick = (module: Module) => {
     if (!module.active) return
@@ -332,7 +397,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-brand-light flex">
+    <>
+      {/* Impersonate Banner - aparece no topo quando ativo */}
+      <ImpersonateBanner />
+      
+      <div className={`min-h-screen bg-brand-light flex ${isImpersonateActive ? 'pt-10' : ''}`}>
       {/* Sidebar */}
       <div className={`${sidebarOpen ? 'w-80' : 'w-0'} bg-brand-midnight flex flex-col transition-all duration-300 overflow-hidden`}>
         {/* Logo */}
@@ -451,32 +520,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 <Plus className="w-4 h-4 text-brand-success" />
               </button>
 
-              {/* Impersonate Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowImpersonateDropdown(!showImpersonateDropdown)}
-                  className="flex items-center space-x-2 bg-brand-light px-3 py-2 rounded-lg hover:bg-brand-border transition-colors"
-                >
-                  <span className="font-brand-secondary text-brand-midnight">Admin</span>
-                  <ChevronDown className="w-4 h-4 text-brand-slate" />
-                </button>
-
-                {showImpersonateDropdown && (
-                  <div className="absolute right-0 mt-2 w-48 bg-brand-white rounded-lg shadow-brand border border-brand-border z-50">
-                    <div className="p-2">
-                      <button className="w-full text-left px-3 py-2 text-sm text-brand-midnight hover:bg-brand-light rounded font-brand-secondary">
-                        João Silva
-                      </button>
-                      <button className="w-full text-left px-3 py-2 text-sm text-brand-midnight hover:bg-brand-light rounded font-brand-secondary">
-                        Maria Santos
-                      </button>
-                      <button className="w-full text-left px-3 py-2 text-sm text-brand-midnight hover:bg-brand-light rounded font-brand-secondary">
-                        Pedro Costa
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
+              {/* Impersonate Dropdown - Real, com dados do Supabase */}
+              <ImpersonateDropdown userRole={userData.role} />
 
               {/* Logout */}
               <button 
@@ -808,5 +853,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
       )}
     </div>
+    </>
   )
 }
