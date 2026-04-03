@@ -324,14 +324,27 @@ export default function ClientesPage() {
         return;
       }
       
-      // Buscar role do profile
+      const user = session.user;
+      
+      // Buscar role do profile como fallback
       const { data: profile } = await client
         .from('profiles')
         .select('role')
-        .eq('id', session.user.id)
+        .eq('id', user.id)
         .single();
       
-      const userRole = profile?.role || 'user';
+      // Extração redundante da role - tentar todas as vias possíveis
+      const userRole = user?.user_metadata?.role || user?.app_metadata?.role || user?.role || profile?.role || 'user';
+      
+      // Debug: ver o que está a chegar do Supabase
+      console.log('Role encontrada:', userRole, 'User inteiro:', user);
+      
+      // Verificação de segurança: apenas superadmin/developer pode ativar
+      if (userRole !== 'superadmin' && userRole !== 'developer') {
+        setToast({ message: 'Acesso negado. Apenas SuperAdmins ou Developers podem ativar o modo Impersonate.', type: 'error' });
+        setActionLoading(null);
+        return;
+      }
       
       // Ativar impersonate via store (Sprint 1)
       const result = activateImpersonate(tenant.id, tenant.nome_empresa, userRole);
