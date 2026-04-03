@@ -99,7 +99,7 @@ export function useTenantModules(): UseTenantModulesReturn {
         
         const { data: tenant, error: tenantError } = await client
           .from('tenants')
-          .select('active_modules')
+          .select('modulo_logistica, modulo_condominios, modulo_frota, modulo_rh, modulo_cc, modulo_ia')
           .eq('id', effectiveTenantId)
           .single()
 
@@ -107,21 +107,18 @@ export function useTenantModules(): UseTenantModulesReturn {
           console.error('[useTenantModules] Erro ao buscar módulos:', tenantError)
           setError(tenantError.message)
           setActiveModules([])
-        } else if (tenant?.active_modules) {
-          console.log('[useTenantModules] Módulos brutos da DB:', tenant.active_modules)
+        } else if (tenant) {
+          console.log('[useTenantModules] Módulos brutos da DB:', tenant)
           
-          // Converter para array - suporta formato objeto {modulo: true} ou array
-          let modulesArray: string[] = []
+          // Converter colunas booleanas para array de módulos ativos
+          const modulesArray: string[] = []
           
-          if (Array.isArray(tenant.active_modules)) {
-            // Já é array
-            modulesArray = tenant.active_modules
-          } else if (typeof tenant.active_modules === 'object' && tenant.active_modules !== null) {
-            // É objeto {modulo: true/false} - converter para array
-            modulesArray = Object.entries(tenant.active_modules)
-              .filter(([key, value]) => value === true)
-              .map(([key]) => key)
-          }
+          if (tenant.modulo_logistica) modulesArray.push('logistica')
+          if (tenant.modulo_condominios) modulesArray.push('condominios')
+          if (tenant.modulo_frota) modulesArray.push('frota')
+          if (tenant.modulo_rh) modulesArray.push('rh')
+          if (tenant.modulo_cc) modulesArray.push('cc')
+          if (tenant.modulo_ia) modulesArray.push('ia')
           
           console.log('[useTenantModules] Módulos ativos convertidos:', modulesArray)
           setActiveModules(modulesArray)

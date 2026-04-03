@@ -53,7 +53,7 @@ const modules: Module[] = [
   { id: 'frota', name: 'Gestão de Frota', icon: Truck, active: true, path: '/frota', moduleName: 'frota' },
   { id: 'condominios', name: 'Gestão de Condomínios', icon: Building, active: true, path: '/condominios', moduleName: 'condominios' },
   { id: 'fichas-tecnicas', name: 'Fichas Técnicas', icon: FileText, active: true, path: '/fichas-tecnicas', moduleName: 'fichas_tecnicas' },
-  { id: 'conta-corrente', name: 'Conta Corrente', icon: CreditCard, active: true, path: '/conta-corrente', moduleName: 'conta_corrente' },
+  { id: 'conta-corrente', name: 'Conta Corrente', icon: CreditCard, active: true, path: '/conta-corrente', moduleName: 'cc' },
   { id: 'dashboard', name: 'Dashboard', icon: BarChart3, active: true, path: '/dashboard', moduleName: 'dashboard' },
   { id: 'ia-insight', name: 'IA Insight', icon: Brain, active: true, path: '/ia-insight', moduleName: 'ia' },
   { id: 'importacao-exportacao', name: 'Importação & Exportação', icon: FileText, active: true, path: '/importacao-exportacao', moduleName: 'importacao' },
