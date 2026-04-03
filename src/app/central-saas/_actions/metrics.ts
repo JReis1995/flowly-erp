@@ -33,44 +33,70 @@ export async function getAdminMetrics(): Promise<DashboardMetrics> {
     }
   )
 
-  // Buscar todos os clientes (equipa_flowly da Master DB)
-  const { data: clientes, error: clientesError } = await supabase
-    .from('equipa_flowly')
-    .select('*')
+  // Valores por defeito - garantem que o fluxo nunca quebra
+  let totalClientes = 0
+  let contasAtivas = 0
+  let contasInativas = 0
+  let totalColaboradores = 0
+  let pacotesIAVendidos = 0
+  let creditosIADisponiveis = 0
 
-  if (clientesError) {
-    console.error('Erro ao buscar clientes:', clientesError)
+  // Buscar tenants (clientes) - envolvido em try/catch para não quebrar o fluxo
+  try {
+    const { data: tenants, error: tenantsError } = await supabase
+      .from('tenants')
+      .select('*')
+
+    if (tenantsError) {
+      console.error('[Metrics] Erro ao buscar tenants:', tenantsError)
+    } else if (tenants) {
+      totalClientes = tenants.length
+      contasAtivas = tenants.filter((t: { status: string }) => t.status === 'ativo').length
+      contasInativas = totalClientes - contasAtivas
+    }
+  } catch (err) {
+    console.error('[Metrics] Exceção ao buscar tenants:', err)
   }
 
-  // Buscar pacotes IA
-  const { data: pacotes, error: pacotesError } = await supabase
-    .from('pacotes_ia')
-    .select('*')
+  // Buscar equipa Flowly (flowly_staff) - envolvido em try/catch independente
+  try {
+    const { data: staff, error: staffError } = await supabase
+      .from('flowly_staff')
+      .select('*')
 
-  if (pacotesError) {
-    console.error('Erro ao buscar pacotes IA:', pacotesError)
+    if (staffError) {
+      console.error('[Metrics] Erro ao buscar equipa:', staffError)
+    } else if (staff) {
+      totalColaboradores = staff.filter((s: { cargo: string }) => 
+        s.cargo && ['Owner', 'Admin', 'Dev'].includes(s.cargo)
+      ).length
+    }
+  } catch (err) {
+    console.error('[Metrics] Exceção ao buscar equipa:', err)
   }
 
-  // Calcular métricas
-  const totalClientes = clientes?.length || 0
-  const contasAtivas = clientes?.filter((c: { Status: string }) => c.Status === 'Ativo').length || 0
-  const contasInativas = totalClientes - contasAtivas
-  
+  // Buscar pacotes IA - envolvido em try/catch independente
+  try {
+    const { data: pacotes, error: pacotesError } = await supabase
+      .from('pacotes_ia')
+      .select('*')
+
+    if (pacotesError) {
+      console.error('[Metrics] Erro ao buscar pacotes IA:', pacotesError)
+    } else if (pacotes) {
+      pacotesIAVendidos = pacotes.filter((p: { status: string }) => p.status === 'Ativo').length
+      creditosIADisponiveis = pacotes.reduce((acc: number, p: { creditos: number }) => acc + (p.creditos || 0), 0)
+    }
+  } catch (err) {
+    console.error('[Metrics] Exceção ao buscar pacotes IA:', err)
+  }
+
   // Calcular MRR baseado em clientes ativos (estimativa: €29/mês por cliente ativo)
   const valorPorCliente = 29
   const mrrTotal = contasAtivas * valorPorCliente
   
   // Crescimento mensal (simulado - em produção comparar com mês anterior)
   const crescimentoMensal = 12.5
-
-  // Pacotes IA
-  const pacotesIAVendidos = pacotes?.filter((p: { Status: string }) => p.Status === 'Ativo').length || 0
-  const creditosIADisponiveis = pacotes?.reduce((acc: number, p: { Creditos: number }) => acc + (p.Creditos || 0), 0) || 0
-
-  // Total de colaboradores (equipa Flowly)
-  const totalColaboradores = clientes?.filter((c: { Cargo: string }) => 
-    c.Cargo && ['Owner', 'Admin', 'Dev'].includes(c.Cargo)
-  ).length || 0
 
   return {
     totalClientes,
