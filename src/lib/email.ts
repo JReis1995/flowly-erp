@@ -3,6 +3,7 @@ import { Resend } from "resend";
 const FROM_GENERAL = "geral@flowly.pt";
 const FROM_COMERCIAL = "geral@flowly.pt";
 const CURRENT_YEAR = new Date().getFullYear();
+const LOGO_URL = "https://flowly.pt/flowly-logo.jpg";
 
 // Lazy initialization - só cria a instância quando necessário
 let resendInstance: Resend | null = null;
@@ -17,111 +18,136 @@ function getResend(): Resend {
   return resendInstance;
 }
 
-/** URL do logo - usando domínio próprio para evitar bloqueios */
+/** URL do logo - aponta diretamente para o servidor de produção para evitar bloqueios de segurança */
 function getEmailLogoUrl(): string {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'https://flowly.pt';
-  return `${appUrl}/logo.png`;
+  return LOGO_URL;
 }
 
-// Estilos globais para compatibilidade com clientes de email
+// Estilos globais seguindo o Design System oficial Flowly
 const STYLES = {
   body: `
     margin: 0;
     padding: 0;
-    background-color: #f3f4f6;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #F8FAFC;
+    font-family: 'Inter', 'Roboto', Arial, Helvetica, sans-serif;
   `,
   container: `
     max-width: 600px;
     margin: 0 auto;
-    background-color: #ffffff;
+    background-color: #FFFFFF;
     border-radius: 8px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid #E2E8F0;
     overflow: hidden;
   `,
   header: `
-    background-color: #ffffff;
-    padding: 32px;
+    background-color: #FFFFFF;
+    padding: 32px 20px;
     text-align: center;
-    border-bottom: 1px solid #f3f4f6;
+    border-bottom: 1px solid #E2E8F0;
   `,
   logo: `
     width: 150px;
+    max-width: 150px;
     height: auto;
     display: block;
     margin: 0 auto;
   `,
   content: `
     padding: 40px 32px;
-    background-color: #ffffff;
+    background-color: #FFFFFF;
   `,
   heading1: `
-    color: #111827;
+    color: #020617;
     margin: 0 0 24px 0;
     font-size: 24px;
-    font-weight: 600;
+    font-weight: 700;
+    font-family: 'Inter', Arial, Helvetica, sans-serif;
     line-height: 1.3;
   `,
-  text: `
-    color: #374151;
+  heading2: `
+    color: #020617;
+    margin: 0 0 20px 0;
+    font-size: 20px;
+    font-weight: 700;
+    font-family: 'Inter', Arial, Helvetica, sans-serif;
+    line-height: 1.3;
+  `,
+  heading3: `
+    color: #020617;
+    margin: 0 0 12px 0;
     font-size: 16px;
+    font-weight: 700;
+    font-family: 'Inter', Arial, Helvetica, sans-serif;
+    line-height: 1.4;
+  `,
+  text: `
+    color: #64748B;
+    font-size: 16px;
+    font-family: 'Roboto', Arial, Helvetica, sans-serif;
+    font-weight: 400;
     line-height: 1.6;
     margin: 0 0 16px 0;
   `,
   button: `
     background-color: #06B6D4;
-    color: #ffffff;
+    color: #FFFFFF;
     padding: 14px 32px;
     text-decoration: none;
     border-radius: 8px;
     font-weight: 600;
+    font-family: 'Inter', Arial, Helvetica, sans-serif;
     display: inline-block;
     font-size: 15px;
+    border: none;
   `,
   buttonContainer: `
     text-align: center;
     margin: 32px 0;
   `,
   infoBox: `
-    background-color: #f9fafb;
+    background-color: #F8FAFC;
     border-left: 4px solid #06B6D4;
     padding: 20px;
     margin: 24px 0;
-    border-radius: 0 6px 6px 0;
+    border-radius: 0 8px 8px 0;
   `,
   successBox: `
-    background-color: #f0fdf4;
-    border: 2px solid #10B981;
-    border-radius: 12px;
+    background-color: #F0FDF4;
+    border: 1px solid #10B981;
+    border-radius: 8px;
     padding: 30px;
     margin: 24px 0;
     text-align: center;
   `,
   footer: `
-    background-color: #f9fafb;
+    background-color: #F8FAFC;
     padding: 24px 32px;
     text-align: center;
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid #E2E8F0;
   `,
   footerText: `
-    color: #6b7280;
+    color: #64748B;
     font-size: 13px;
+    font-family: 'Roboto', Arial, Helvetica, sans-serif;
     margin: 0 0 8px 0;
   `,
   link: `
     color: #06B6D4;
     text-decoration: none;
+    font-family: 'Roboto', Arial, Helvetica, sans-serif;
   `,
   list: `
     margin: 0;
     padding-left: 20px;
-    color: #374151;
+    color: #64748B;
     font-size: 15px;
+    font-family: 'Roboto', Arial, Helvetica, sans-serif;
     line-height: 1.8;
   `,
   strong: `
-    color: #111827;
-    font-weight: 600;
+    color: #020617;
+    font-weight: 700;
+    font-family: 'Inter', Arial, Helvetica, sans-serif;
   `,
 };
 
@@ -156,14 +182,16 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<{ succes
   <title>Bem-vindo à Flowly!</title>
 </head>
 <body style="${STYLES.body}">
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f3f4f6;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #F8FAFC;">
     <tr>
       <td align="center" style="padding: 20px 0;">
         <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="${STYLES.container}">
           <!-- Header -->
           <tr>
             <td style="${STYLES.header}">
-              <img src="${getEmailLogoUrl()}" alt="Flowly ERP" style="${STYLES.logo}" />
+              <a href="https://flowly.pt" target="_blank" style="text-decoration: none;">
+                <img src="${getEmailLogoUrl()}" alt="Flowly Logo" width="150" style="display: block; margin: 0 auto; border: none; max-width: 100%; height: auto;" />
+              </a>
             </td>
           </tr>
           
@@ -190,7 +218,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<{ succes
               ` : ""}
               
               <div style="${STYLES.infoBox}">
-                <h3 style="color: #111827; margin: 0 0 12px 0; font-size: 16px; font-weight: 600;">Próximos passos:</h3>
+                <h3 style="${STYLES.heading3}">Próximos passos:</h3>
                 <ul style="${STYLES.list}">
                   <li>Complete o seu perfil de empresa</li>
                   <li>Importe os seus dados (clientes, fornecedores, artigos)</li>
@@ -259,14 +287,16 @@ export async function sendPurchaseThankYouEmail(data: PurchaseThankYouEmailData)
   <title>Obrigado pela sua compra!</title>
 </head>
 <body style="${STYLES.body}">
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f3f4f6;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #F8FAFC;">
     <tr>
       <td align="center" style="padding: 20px 0;">
         <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="${STYLES.container}">
           <!-- Header -->
           <tr>
             <td style="${STYLES.header}">
-              <img src="${getEmailLogoUrl()}" alt="Flowly ERP" style="${STYLES.logo}" />
+              <a href="https://flowly.pt" target="_blank" style="text-decoration: none;">
+                <img src="${getEmailLogoUrl()}" alt="Flowly Logo" width="150" style="display: block; margin: 0 auto; border: none; max-width: 100%; height: auto;" />
+              </a>
             </td>
           </tr>
           
@@ -282,7 +312,7 @@ export async function sendPurchaseThankYouEmail(data: PurchaseThankYouEmailData)
               </p>
               
               <div style="${STYLES.successBox}">
-                <h2 style="color: #059669; margin: 0 0 20px 0; font-size: 20px; font-weight: 600;">Resumo da Compra</h2>
+                <h2 style="color: #059669; ${STYLES.heading2}">Resumo da Compra</h2>
                 
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto; text-align: left;">
                   <tr>
@@ -305,7 +335,7 @@ export async function sendPurchaseThankYouEmail(data: PurchaseThankYouEmailData)
               </div>
               
               <div style="${STYLES.infoBox}">
-                <h3 style="color: #111827; margin: 0 0 12px 0; font-size: 16px; font-weight: 600;">O que pode fazer com IA?</h3>
+                <h3 style="${STYLES.heading3}">O que pode fazer com IA?</h3>
                 <ul style="${STYLES.list}">
                   <li>Análises preditivas de vendas e stock</li>
                   <li>Insights automáticos sobre o seu negócio</li>
