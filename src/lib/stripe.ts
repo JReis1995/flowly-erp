@@ -2,7 +2,7 @@ import Stripe from "stripe";
 
 // Lazy initialization - só cria a instância quando necessário
 let stripeInstance: Stripe | null = null;
-function getStripe(): Stripe {
+export function getStripe(): Stripe {
   if (!stripeInstance) {
     const apiKey = process.env.STRIPE_SECRET_KEY;
     if (!apiKey) {

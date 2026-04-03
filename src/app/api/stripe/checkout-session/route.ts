@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
+import { getStripeSession } from "@/lib/stripe";
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,20 +14,13 @@ export async function POST(req: NextRequest) {
 
     const origin = req.headers.get("origin") || "http://localhost:3000";
 
-    const session = await stripe.checkout.sessions.create({
+    const session = await getStripeSession({
+      priceId,
+      tenantId,
+      pacoteId,
       mode: mode as "payment" | "subscription",
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
-      metadata: {
-        tenantId,
-        pacoteId,
-      },
-      success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/checkout/cancel`,
+      successUrl: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancelUrl: `${origin}/checkout/cancel`,
     });
 
     return NextResponse.json({ sessionId: session.id, url: session.url });

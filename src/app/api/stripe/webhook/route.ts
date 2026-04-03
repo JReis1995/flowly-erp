@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { sendPurchaseThankYouEmail } from "@/lib/email";
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
   let event;
 
   try {
-    event = stripe.webhooks.constructEvent(payload, signature, webhookSecret);
+    event = getStripe().webhooks.constructEvent(payload, signature, webhookSecret);
     console.log("[Webhook] Event verified:", event.type, "ID:", event.id);
   } catch (err: any) {
     console.error(`[Webhook] Signature verification failed: ${err.message}`);
