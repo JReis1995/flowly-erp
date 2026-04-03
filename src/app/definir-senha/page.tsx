@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Lock, Eye, EyeOff, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
@@ -65,6 +67,12 @@ function DefinirSenhaForm() {
 
     if (!accessToken) {
       setError('Link inválido ou expirado')
+      return
+    }
+
+    if (!supabase) {
+      setError('Erro: Supabase não configurado. Contacte o suporte.')
+      setIsLoading(false)
       return
     }
 

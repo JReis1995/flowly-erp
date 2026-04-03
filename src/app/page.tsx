@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useEffect, useState } from 'react'
 import { createBrowserClient } from '@/utils/supabase-browser'
 import DashboardLayout from '@/components/DashboardLayout'

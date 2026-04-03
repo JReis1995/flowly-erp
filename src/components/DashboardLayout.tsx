@@ -62,7 +62,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [showUserModal, setShowUserModal] = useState(false)
   const [showImpersonateDropdown, setShowImpersonateDropdown] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const supabase = createBrowserClient()
+  const supabaseClient = createBrowserClient()
+  const supabase = supabaseClient
   
   // User data state
   const [userData, setUserData] = useState({
@@ -90,12 +91,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   // Buscar pacotes reais do Supabase quando abrir modal
   useEffect(() => {
     async function fetchPacotes() {
-      if (!showBuyCreditsModal || !supabase || pacotesFetched.current) return
+      const client = createBrowserClient()
+      if (!client || !showBuyCreditsModal || pacotesFetched.current) return
       
       pacotesFetched.current = true
       setPacotesLoading(true)
       try {
-        const { data, error } = await supabase
+        const { data, error } = await client
           .from('pacotes_ia')
           .select('*')
           .eq('status', 'Ativo')
@@ -112,7 +114,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     }
 
     fetchPacotes()
-  }, [showBuyCreditsModal])
+  }, [showBuyCreditsModal, supabase])
 
   // Reset flag quando fecha modal
   useEffect(() => {
