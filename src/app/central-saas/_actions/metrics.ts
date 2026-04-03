@@ -58,22 +58,8 @@ export async function getAdminMetrics(): Promise<DashboardMetrics> {
     console.error('[Metrics] Exceção ao buscar tenants:', err)
   }
 
-  // Buscar equipa Flowly (flowly_staff) - envolvido em try/catch independente
-  try {
-    const { data: staff, error: staffError } = await supabase
-      .from('flowly_staff')
-      .select('*')
-
-    if (staffError) {
-      console.error('[Metrics] Erro ao buscar equipa:', staffError)
-    } else if (staff) {
-      totalColaboradores = staff.filter((s: { cargo: string }) => 
-        s.cargo && ['Owner', 'Admin', 'Dev'].includes(s.cargo)
-      ).length
-    }
-  } catch (err) {
-    console.error('[Metrics] Exceção ao buscar equipa:', err)
-  }
+  // NOTA: A tabela flowly_staff não existe na BD (migration não executada)
+  // totalColaboradores mantém-se a 0 até a tabela ser criada
 
   // Buscar pacotes IA - envolvido em try/catch independente
   try {
