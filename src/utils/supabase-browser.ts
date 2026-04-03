@@ -10,7 +10,6 @@ export function createBrowserClient(): SupabaseClient | null {
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
     if (!supabaseUrl || !supabaseAnonKey) {
-      console.warn('[Supabase] URL ou Key não definidos - cliente não disponível')
       return null
     }
 

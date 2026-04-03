@@ -79,12 +79,13 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<{ succes
     const html = `
       <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
         <div style="background: linear-gradient(135deg, #06B6D4 0%, #0891B2 100%); padding: 40px 30px; text-align: center;">
-          <!-- Logo Flowly em texto estilizado -->
-          <div style="margin-bottom: 20px;">
-            <span style="color: #ffffff; font-weight: 800; font-size: 36px; font-family: 'Inter', sans-serif; letter-spacing: -1px; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">Flowly</span>
-            <span style="color: rgba(255,255,255,0.8); font-weight: 400; font-size: 14px; display: block; margin-top: 5px; font-family: 'Inter', sans-serif;">ERP</span>
+          <!-- Logo Flowly Correto -->
+          <div style="margin-bottom: 15px;">
+            <span style="color: #ffffff; font-weight: 800; font-size: 42px; font-family: 'Inter', sans-serif; letter-spacing: 2px; font-style: italic; text-shadow: 0 2px 4px rgba(0,0,0,0.1); display: block;">FLOWLY</span>
+            <div style="width: 180px; height: 4px; background: linear-gradient(90deg, #10B981 0%, #06B6D4 100%); margin: 8px auto; border-radius: 2px;"></div>
+            <span style="color: rgba(255,255,255,0.95); font-weight: 500; font-size: 11px; font-family: 'Inter', sans-serif; letter-spacing: 1.5px; text-transform: uppercase; display: block; margin-top: 8px;">Onde o fluxo encontra a precis&atilde;o</span>
           </div>
-          <h1 style="color: #ffffff; margin: 15px 0 0 0; font-size: 26px; font-weight: 600;">Bem-vindo &agrave; Flowly!</h1>
+          <h1 style="color: #ffffff; margin: 20px 0 0 0; font-size: 24px; font-weight: 600;">Bem-vindo &agrave; Flowly!</h1>
         </div>
         
         <div style="padding: 40px 30px; background: #ffffff;">
@@ -167,12 +168,13 @@ export async function sendPurchaseThankYouEmail(data: PurchaseThankYouEmailData)
     const html = `
       <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
         <div style="background: linear-gradient(135deg, #06B6D4 0%, #10B981 100%); padding: 40px 30px; text-align: center;">
-          <!-- Logo Flowly em texto estilizado -->
-          <div style="margin-bottom: 20px;">
-            <span style="color: #ffffff; font-weight: 800; font-size: 36px; font-family: 'Inter', sans-serif; letter-spacing: -1px; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">Flowly</span>
-            <span style="color: rgba(255,255,255,0.8); font-weight: 400; font-size: 14px; display: block; margin-top: 5px; font-family: 'Inter', sans-serif;">ERP</span>
+          <!-- Logo Flowly Correto -->
+          <div style="margin-bottom: 15px;">
+            <span style="color: #ffffff; font-weight: 800; font-size: 42px; font-family: 'Inter', sans-serif; letter-spacing: 2px; font-style: italic; text-shadow: 0 2px 4px rgba(0,0,0,0.1); display: block;">FLOWLY</span>
+            <div style="width: 180px; height: 4px; background: linear-gradient(90deg, #10B981 0%, #06B6D4 100%); margin: 8px auto; border-radius: 2px;"></div>
+            <span style="color: rgba(255,255,255,0.95); font-weight: 500; font-size: 11px; font-family: 'Inter', sans-serif; letter-spacing: 1.5px; text-transform: uppercase; display: block; margin-top: 8px;">Onde o fluxo encontra a precis&atilde;o</span>
           </div>
-          <h1 style="color: #ffffff; margin: 15px 0 0 0; font-size: 26px; font-weight: 600;">Obrigado pela sua compra!</h1>
+          <h1 style="color: #ffffff; margin: 20px 0 0 0; font-size: 24px; font-weight: 600;">Obrigado pela sua compra!</h1>
           <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">Cr&eacute;ditos IA adicionados &agrave; sua conta</p>
         </div>
         

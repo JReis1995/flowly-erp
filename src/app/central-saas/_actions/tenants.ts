@@ -228,7 +228,7 @@ export async function createTenant(
   });
 
   if (userError && !userError.message.includes('already been registered')) {
-    console.error("Erro ao criar utilizador:", userError);
+    // Utilizador já existe, prosseguir
   }
 
   // Gerar magic link para definir senha inicial
@@ -241,7 +241,7 @@ export async function createTenant(
   });
 
   if (linkError) {
-    console.error("Erro ao gerar link:", linkError);
+    // Link não gerado, usar fallback
   }
 
   // Extrair tokens do link gerado
@@ -405,26 +405,20 @@ export async function resendWelcomeEmail(
   });
 
   if (userError && !userError.message.includes('already been registered')) {
-    console.log("[ResendWelcome] Info ao criar utilizador:", userError.message);
+    // Utilizador já existe, prosseguir
   } else {
-    console.log("[ResendWelcome] Utilizador criado ou já existia");
+    // Utilizador criado ou já existia
   }
   
   const { data: linkData, error: linkError } = await adminSupabase.auth.admin.generateLink({
     type: 'magiclink',
     email: tenant.gestor_email,
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/definir-senha`,
+      redirectTo: `${getAppUrl()}/definir-senha`,
     },
   });
 
   if (linkError) {
-    console.error("[ResendWelcome] Erro ao gerar link:", {
-      error: linkError,
-      email: tenant.gestor_email,
-      hasServiceRole: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-      serviceRolePrefix: process.env.SUPABASE_SERVICE_ROLE_KEY?.substring(0, 10) + '...',
-    });
     return { success: false, error: `Erro ao gerar link: ${linkError.message}` };
   }
 

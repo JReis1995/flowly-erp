@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { Lock, Eye, EyeOff, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
 import { createBrowserClient } from '@/utils/supabase-browser'
 
@@ -15,7 +15,6 @@ function DefinirSenhaForm() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const router = useRouter()
-  const searchParams = useSearchParams()
   const supabase = createBrowserClient()
 
   const [accessToken, setAccessToken] = useState<string | null>(null)
@@ -23,30 +22,43 @@ function DefinirSenhaForm() {
 
   // Supabase redireciona com tokens no fragmento (#access_token=...) — não na query string
   useEffect(() => {
-    const hashParams = new URLSearchParams(
-      typeof window !== 'undefined' ? window.location.hash.replace(/^#/, '') : ''
-    )
-    const access =
-      hashParams.get('access_token') || searchParams.get('access_token')
-    const refresh =
-      hashParams.get('refresh_token') || searchParams.get('refresh_token')
+    if (typeof window === 'undefined') return
+
+    // Extrair tokens do hash (#access_token=...)
+    const hash = window.location.hash
+    if (!hash) {
+      setError('Link inválido ou expirado. Por favor, solicite um novo link.')
+      setIsChecking(false)
+      return
+    }
+
+    const hashParams = new URLSearchParams(hash.replace(/^#/, ''))
+    const access = hashParams.get('access_token')
+    const refresh = hashParams.get('refresh_token')
+    const expiresAt = hashParams.get('expires_at')
+
+    // Verificar se o token expirou
+    if (expiresAt) {
+      const expiryDate = new Date(parseInt(expiresAt) * 1000)
+      if (expiryDate < new Date()) {
+        setError('Link expirado. Por favor, solicite um novo link.')
+        setIsChecking(false)
+        return
+      }
+    }
 
     setAccessToken(access)
     setRefreshToken(refresh)
 
-    if (access && typeof window !== 'undefined' && window.location.hash) {
-      window.history.replaceState(
-        null,
-        '',
-        window.location.pathname + window.location.search
-      )
-    }
-
-    if (!access) {
+    // Limpar o hash da URL para segurança (tokens já estão no estado)
+    if (access) {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search)
+    } else {
       setError('Link inválido ou expirado. Por favor, solicite um novo link.')
     }
+
     setIsChecking(false)
-  }, [searchParams])
+  }, []) // Executar apenas uma vez no mount
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -107,7 +119,6 @@ function DefinirSenhaForm() {
         router.push('/dashboard')
       }, 2000)
     } catch (err) {
-      console.error('[DefinirSenha] Erro:', err)
       setError('Erro ao processar. Tente novamente.')
       setIsLoading(false)
     }
