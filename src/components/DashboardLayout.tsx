@@ -31,6 +31,7 @@ import {
   X,
   Eye,
 } from 'lucide-react'
+import { useTenantModules } from '@/hooks/useTenantModules'
 
 interface Module {
   id: string
@@ -38,22 +39,24 @@ interface Module {
   icon: React.ElementType
   active?: boolean
   path: string
+  moduleName?: string // Nome do módulo para feature toggling
+  alwaysShow?: boolean // Se true, aparece sempre independentemente de active_modules
 }
 
 const modules: Module[] = [
-  { id: 'pagina-inicial', name: 'Página Inicial', icon: Home, active: true, path: '/' },
-  { id: 'central-saas', name: 'Central SaaS', icon: Home, active: true, path: '/central-saas' },
-  { id: 'colaboradores', name: 'Colaboradores', icon: Users, active: true, path: '/colaboradores' },
-  { id: 'acessos', name: 'Acessos', icon: Key, active: true, path: '/acessos' },
-  { id: 'clientes-fornecedores', name: 'Clientes & Fornecedores', icon: Users, active: true, path: '/clientes-fornecedores' },
-  { id: 'logistica', name: 'Logística', icon: Truck, active: true, path: '/logistica' },
-  { id: 'frota', name: 'Gestão de Frota', icon: Truck, active: true, path: '/frota' },
-  { id: 'condominios', name: 'Gestão de Condomínios', icon: Building, active: true, path: '#' },
-  { id: 'fichas-tecnicas', name: 'Fichas Técnicas', icon: FileText, active: true, path: '#' },
-  { id: 'conta-corrente', name: 'Conta Corrente', icon: CreditCard, active: true, path: '#' },
-  { id: 'dashboard', name: 'Dashboard', icon: BarChart3, active: true, path: '/dashboard' },
-  { id: 'ia-insight', name: 'IA Insight', icon: Brain, active: true, path: '/ia-insight' },
-  { id: 'importacao-exportacao', name: 'Importação & Exportação', icon: FileText, active: true, path: '#' },
+  { id: 'pagina-inicial', name: 'Página Inicial', icon: Home, active: true, path: '/', alwaysShow: true },
+  { id: 'central-saas', name: 'Central SaaS', icon: Home, active: true, path: '/central-saas', moduleName: 'central_saas', alwaysShow: true },
+  { id: 'colaboradores', name: 'Colaboradores', icon: Users, active: true, path: '/colaboradores', moduleName: 'rh' },
+  { id: 'acessos', name: 'Acessos', icon: Key, active: true, path: '/acessos', moduleName: 'acessos' },
+  { id: 'clientes-fornecedores', name: 'Clientes & Fornecedores', icon: Users, active: true, path: '/clientes-fornecedores', moduleName: 'clientes' },
+  { id: 'logistica', name: 'Logística', icon: Truck, active: true, path: '/logistica', moduleName: 'logistica' },
+  { id: 'frota', name: 'Gestão de Frota', icon: Truck, active: true, path: '/frota', moduleName: 'frota' },
+  { id: 'condominios', name: 'Gestão de Condomínios', icon: Building, active: true, path: '/condominios', moduleName: 'condominios' },
+  { id: 'fichas-tecnicas', name: 'Fichas Técnicas', icon: FileText, active: true, path: '/fichas-tecnicas', moduleName: 'fichas_tecnicas' },
+  { id: 'conta-corrente', name: 'Conta Corrente', icon: CreditCard, active: true, path: '/conta-corrente', moduleName: 'conta_corrente' },
+  { id: 'dashboard', name: 'Dashboard', icon: BarChart3, active: true, path: '/dashboard', moduleName: 'dashboard' },
+  { id: 'ia-insight', name: 'IA Insight', icon: Brain, active: true, path: '/ia-insight', moduleName: 'ia' },
+  { id: 'importacao-exportacao', name: 'Importação & Exportação', icon: FileText, active: true, path: '/importacao-exportacao', moduleName: 'importacao' },
 ]
 
 interface DashboardLayoutProps {
@@ -63,6 +66,25 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter()
   const { isActive: isImpersonateActive, clearImpersonate, tenantId } = useImpersonate()
+  
+  // Fetch tenant modules for feature toggling
+  const { activeModules, loading: modulesLoading, effectiveTenantId } = useTenantModules()
+  
+  // Função para verificar se um módulo deve ser mostrado
+  const shouldShowModule = (module: Module): boolean => {
+    // Sempre mostrar se alwaysShow for true
+    if (module.alwaysShow) return true
+    
+    // Se não tem moduleName, mostrar por padrão (compatibilidade)
+    if (!module.moduleName) return true
+    
+    // Se activeModules está vazio (sem configuração), mostrar todos
+    if (activeModules.length === 0) return true
+    
+    // Verificar se o moduleName está nos activeModules
+    return activeModules.includes(module.moduleName)
+  }
+  
   const [activeModule, setActiveModule] = useState('pagina-inicial')
   const [showUserModal, setShowUserModal] = useState(false)
   const [showImpersonateDropdown, setShowImpersonateDropdown] = useState(false)
@@ -415,8 +437,28 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
         {/* Navigation */}
         <nav className="flex-1 p-4">
+          {/* Loading state for modules */}
+          {modulesLoading && (
+            <div className="flex items-center justify-center py-4 px-4">
+              <Loader2 className="w-5 h-5 text-brand-primary animate-spin" />
+              <span className="ml-2 text-sm text-brand-slate font-brand-secondary">A carregar módulos...</span>
+            </div>
+          )}
+          
+          {/* Debug info when impersonating */}
+          {isImpersonateActive && effectiveTenantId && (
+            <div className="mb-4 px-4 py-2 bg-brand-primary/20 rounded-lg">
+              <p className="text-xs text-brand-primary font-brand-secondary">
+                Tenant: {effectiveTenantId.slice(0, 8)}...
+              </p>
+              <p className="text-xs text-brand-slate font-brand-secondary">
+                Módulos: {activeModules.length > 0 ? activeModules.join(', ') : 'Todos (sem restrições)'}
+              </p>
+            </div>
+          )}
+          
           <ul className="space-y-2">
-            {modules.map((module) => {
+            {modules.filter(shouldShowModule).map((module) => {
               const Icon = module.icon
               return (
                 <li key={module.id}>
