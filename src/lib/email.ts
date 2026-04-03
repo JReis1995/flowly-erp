@@ -40,7 +40,7 @@ const STYLES = {
     overflow: hidden;
   `,
   header: `
-    background-color: #FFFFFF;
+    background-color: #F1F5F9;
     padding: 32px 20px;
     text-align: center;
     border-bottom: 1px solid #E2E8F0;
