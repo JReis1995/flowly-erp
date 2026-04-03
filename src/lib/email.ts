@@ -21,8 +21,8 @@ function getResend(): Resend {
 function getEmailLogoUrl(): string {
   const custom = process.env.NEXT_PUBLIC_EMAIL_LOGO_URL?.trim();
   if (custom) return custom;
-  // Usar logo do site flowly.pt (mais fiável que postimg.cc)
-  return "https://www.flowly.pt/flowly-logo.jpg";
+  // Logo Flowly ERP via CDN fiável
+  return "https://i.postimg.cc/mrcDM13S/flowly-logo.jpg";
 }
 
 // Assinatura transversal para todos os emails
@@ -79,7 +79,13 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<{ succes
     const html = `
       <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
         <div style="background: #06B6D4; padding: 30px; text-align: center;">
-          <img src="${getEmailLogoUrl()}" alt="Flowly ERP" width="160" height="50" style="height: 50px; width: auto; max-width: 200px; margin-bottom: 15px; display: inline-block;" />
+          <!-- Logo em texto/SVG inline para evitar bloqueio de imagens externas -->
+          <div style="margin-bottom: 15px; display: inline-block;">
+            <div style="background: linear-gradient(135deg, #10B981 0%, #06B6D4 100%); border-radius: 12px; padding: 12px 20px; display: inline-flex; align-items: center; gap: 10px;">
+              <div style="width: 32px; height: 32px; background: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px;">⚡</div>
+              <span style="color: #ffffff; font-weight: 700; font-size: 24px; font-family: 'Inter', sans-serif; letter-spacing: -0.5px;">Flowly</span>
+            </div>
+          </div>
           <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">Bem-vindo &agrave; Flowly!</h1>
         </div>
         
@@ -163,7 +169,13 @@ export async function sendPurchaseThankYouEmail(data: PurchaseThankYouEmailData)
     const html = `
       <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
         <div style="background: linear-gradient(135deg, #06B6D4 0%, #10B981 100%); padding: 30px; text-align: center;">
-          <img src="${getEmailLogoUrl()}" alt="Flowly ERP" width="160" height="50" style="height: 50px; width: auto; max-width: 200px; margin-bottom: 15px; display: inline-block;" />
+          <!-- Logo em texto/SVG inline para evitar bloqueio de imagens externas -->
+          <div style="margin-bottom: 15px; display: inline-block;">
+            <div style="background: white; border-radius: 12px; padding: 12px 20px; display: inline-flex; align-items: center; gap: 10px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+              <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #10B981 0%, #06B6D4 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px;">⚡</div>
+              <span style="color: #020617; font-weight: 700; font-size: 24px; font-family: 'Inter', sans-serif; letter-spacing: -0.5px;">Flowly</span>
+            </div>
+          </div>
           <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">Obrigado pela sua compra!</h1>
           <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">Cr&eacute;ditos IA adicionados &agrave; sua conta</p>
         </div>
