@@ -17,7 +17,7 @@ export default function ColaboradoresEscalasPage() {
   const { supabase, companyId, isPlatform, profileTenantId, impersonateActive, loading: ctxLoading } =
     useRhCompanyId(selectedPlatformTenant)
 
-  const [tenants, setTenants] = useState<{ id: string; nome: string | null }[]>([])
+  const [tenants, setTenants] = useState<{ id: string; nome_empresa: string | null }[]>([])
   const [colaboradores, setColaboradores] = useState<ScheduleCollaborator[]>([])
   const [loadError, setLoadError] = useState<string | null>(null)
   const [loadingList, setLoadingList] = useState(false)
@@ -26,7 +26,10 @@ export default function ColaboradoresEscalasPage() {
     if (!supabase || !isPlatform || impersonateActive || profileTenantId) return
     let cancelled = false
     ;(async () => {
-      const { data, error } = await supabase.from('tenants').select('id, nome').order('nome')
+      const { data, error } = await supabase
+        .from('tenants')
+        .select('id, nome_empresa')
+        .order('nome_empresa')
       if (cancelled || error) return
       setTenants(data ?? [])
     })()
@@ -103,7 +106,7 @@ export default function ColaboradoresEscalasPage() {
             <option value="">— Selecionar empresa —</option>
             {tenants.map((t) => (
               <option key={t.id} value={t.id}>
-                {t.nome ?? t.id}
+                {t.nome_empresa ?? t.id}
               </option>
             ))}
           </select>

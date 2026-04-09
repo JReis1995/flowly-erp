@@ -33,7 +33,7 @@ export default function CustosRescisaoView() {
     useRhCompanyId(platformTenant)
 
   const [profileRole, setProfileRole] = useState<string | null>(null)
-  const [tenants, setTenants] = useState<{ id: string; nome: string | null }[]>([])
+  const [tenants, setTenants] = useState<{ id: string; nome_empresa: string | null }[]>([])
   const [employees, setEmployees] = useState<EmployeeRow[]>([])
   const [listLoading, setListLoading] = useState(false)
   const [listError, setListError] = useState<string | null>(null)
@@ -66,7 +66,10 @@ export default function CustosRescisaoView() {
     if (profileTenantId) return
     let cancelled = false
     ;(async () => {
-      const { data, error } = await supabase.from('tenants').select('id, nome').order('nome')
+      const { data, error } = await supabase
+        .from('tenants')
+        .select('id, nome_empresa')
+        .order('nome_empresa')
       if (cancelled || error) return
       setTenants(data ?? [])
     })()
@@ -163,7 +166,7 @@ export default function CustosRescisaoView() {
               <option value="">— Empresa —</option>
               {tenants.map((t) => (
                 <option key={t.id} value={t.id}>
-                  {t.nome ?? t.id}
+                  {t.nome_empresa ?? t.id}
                 </option>
               ))}
             </select>
@@ -197,7 +200,7 @@ export default function CustosRescisaoView() {
             <option value="">— Selecionar —</option>
             {tenants.map((t) => (
               <option key={t.id} value={t.id}>
-                {t.nome ?? t.id}
+                {t.nome_empresa ?? t.id}
               </option>
             ))}
           </select>

@@ -20,7 +20,7 @@ export default function ColaboradoresGestaoPage() {
   const { supabase, companyId, isPlatform, profileTenantId, impersonateActive, loading: ctxLoading } =
     useRhCompanyId(selectedPlatformTenant)
 
-  const [tenants, setTenants] = useState<{ id: string; nome: string | null }[]>([])
+  const [tenants, setTenants] = useState<{ id: string; nome_empresa: string | null }[]>([])
   const [rows, setRows] = useState<EmployeeRow[]>([])
   const [listLoading, setListLoading] = useState(false)
   const [listError, setListError] = useState<string | null>(null)
@@ -29,7 +29,10 @@ export default function ColaboradoresGestaoPage() {
     if (!supabase || !isPlatform || impersonateActive || profileTenantId) return
     let cancelled = false
     ;(async () => {
-      const { data, error } = await supabase.from('tenants').select('id, nome').order('nome')
+      const { data, error } = await supabase
+        .from('tenants')
+        .select('id, nome_empresa')
+        .order('nome_empresa')
       if (cancelled || error) return
       setTenants(data ?? [])
     })()
@@ -102,7 +105,7 @@ export default function ColaboradoresGestaoPage() {
             <option value="">— Selecionar empresa —</option>
             {tenants.map((t) => (
               <option key={t.id} value={t.id}>
-                {t.nome ?? t.id}
+                {t.nome_empresa ?? t.id}
               </option>
             ))}
           </select>

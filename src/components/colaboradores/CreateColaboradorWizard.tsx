@@ -10,6 +10,7 @@ import {
   ArrowLeft,
   Check,
   ChevronRight,
+  Copy,
   FileUp,
   Loader2,
   UserPlus,
@@ -77,11 +78,13 @@ export default function CreateColaboradorWizard() {
 
   const [profileRole, setProfileRole] = useState<string | null>(null)
   const [profileTenantId, setProfileTenantId] = useState<string | null>(null)
-  const [tenants, setTenants] = useState<{ id: string; nome: string | null }[]>([])
+  const [tenants, setTenants] = useState<{ id: string; nome_empresa: string | null }[]>([])
   const [selectedPlatformTenant, setSelectedPlatformTenant] = useState('')
 
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null)
+  /** Só preenchido quando a API devolve `devInitialPassword` (modo dev sem convite por email). */
+  const [devInitialPassword, setDevInitialPassword] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<string | null>(null)
 
@@ -114,7 +117,10 @@ export default function CreateColaboradorWizard() {
     if (profileTenantId) return
     let cancelled = false
     ;(async () => {
-      const { data, error } = await supabase.from('tenants').select('id, nome').order('nome')
+      const { data, error } = await supabase
+        .from('tenants')
+        .select('id, nome_empresa')
+        .order('nome_empresa')
       if (cancelled || error) return
       setTenants(data ?? [])
     })()
@@ -155,9 +161,7 @@ export default function CreateColaboradorWizard() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) err.email = 'Email inválido.'
     if (!form.dataInicio) err.dataInicio = 'Data de início obrigatória.'
     if (!form.cargo.trim()) err.cargo = 'Cargo obrigatório.'
-    if (isPlatform && !impersonateActive && !profileTenantId && !selectedPlatformTenant) {
-      err.company = 'Selecione a empresa.'
-    }
+    // Superadmin/developer sem tenant_id: a API infere empresa (gestor_email / tenant_users); dropdown de tenant é opcional.
     setFieldErrors(err)
     return Object.keys(err).length === 0
   }, [form, isPlatform, impersonateActive, profileTenantId, selectedPlatformTenant])
@@ -194,6 +198,7 @@ export default function CreateColaboradorWizard() {
     setSubmitting(true)
     setSubmitError(null)
     setSubmitSuccess(null)
+    setDevInitialPassword(null)
     setUploadProgress(null)
 
     const vencimentoBase = Number(form.vencimentoBase.replace(',', '.'))
@@ -242,6 +247,11 @@ export default function CreateColaboradorWizard() {
 
       const employeeId = data.employeeId as string
       const companyId = data.companyId as string
+      const pwd =
+        typeof (data as { devInitialPassword?: string }).devInitialPassword === 'string'
+          ? (data as { devInitialPassword: string }).devInitialPassword
+          : null
+      setDevInitialPassword(pwd)
 
       setSubmitSuccess(
         typeof data.message === 'string'
@@ -358,17 +368,18 @@ export default function CreateColaboradorWizard() {
         {isPlatform && !impersonateActive && !profileTenantId && (
           <div className="mb-6">
             <label className="mb-2 block text-sm font-brand-secondary font-medium text-brand-slate">
-              Empresa (tenant)
+              Empresa (tenant){' '}
+              <span className="font-normal text-brand-slate/80">— opcional se o seu email for o de gestor da empresa ou estiver em tenant_users</span>
             </label>
             <select
               value={selectedPlatformTenant}
               onChange={(e) => setSelectedPlatformTenant(e.target.value)}
               className={inputClass}
             >
-              <option value="">— Selecionar —</option>
+              <option value="">— Usar empresa associada à conta —</option>
               {tenants.map((t) => (
                 <option key={t.id} value={t.id}>
-                  {t.nome ?? t.id}
+                  {t.nome_empresa ?? t.id}
                 </option>
               ))}
             </select>
@@ -388,6 +399,34 @@ export default function CreateColaboradorWizard() {
         {submitSuccess && (
           <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900 font-brand-secondary">
             {submitSuccess}
+          </div>
+        )}
+
+        {devInitialPassword && (
+          <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-3 py-3 text-sm text-amber-950 font-brand-secondary">
+            <p className="mb-2 font-medium">Palavra-passe inicial (ambiente de desenvolvimento)</p>
+            <p className="mb-2 text-amber-900/90">
+              Não foi enviado email. Entregue esta palavra-passe ao colaborador de forma segura; não voltará a ser mostrada.
+            </p>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <code className="block flex-1 break-all rounded border border-amber-200 bg-white px-2 py-1.5 text-xs text-brand-midnight">
+                {devInitialPassword}
+              </code>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(devInitialPassword)
+                  } catch {
+                    /* ignorar — utilizador pode copiar manualmente */
+                  }
+                }}
+                className="inline-flex shrink-0 items-center justify-center gap-1 rounded-lg border border-amber-400 bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-950 hover:bg-amber-200"
+              >
+                <Copy className="h-3.5 w-3.5" />
+                Copiar
+              </button>
+            </div>
           </div>
         )}
 

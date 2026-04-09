@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
@@ -36,6 +37,27 @@ function createServiceClient() {
   return createClient(url, key, {
     auth: { autoRefreshToken: false, persistSession: false },
   })
+}
+
+/** Só em `development`: cria utilizador Auth sem `inviteUserByEmail` (evita rate limit de SMTP). Produção ignora sempre. */
+function shouldSkipInviteEmail(): boolean {
+  return (
+    process.env.NODE_ENV === 'development' &&
+    (process.env.SKIP_INVITE_EMAIL === 'true' || process.env.SKIP_INVITE_EMAIL === '1')
+  )
+}
+
+function generateDevInitialPassword(): string {
+  return randomBytes(18).toString('base64url')
+}
+
+function isAuthUserAlreadyExists(err: { message?: string } | null): boolean {
+  const msg = err?.message?.toLowerCase() ?? ''
+  return (
+    msg.includes('already been registered') ||
+    msg.includes('already registered') ||
+    msg.includes('user already exists')
+  )
 }
 
 type Body = {
@@ -142,24 +164,39 @@ export async function POST(req: NextRequest) {
     const p = profile as ProfileRow
     const platform = isPlatformRhRole(p.role)
 
+    const fromBodyCompany =
+      typeof body.companyId === 'string' && body.companyId.trim() ? body.companyId.trim() : ''
+
     let companyId: string | null = null
     if (platform) {
-      const fromBody = typeof body.companyId === 'string' ? body.companyId.trim() : ''
-      companyId = fromBody || p.tenant_id || null
+      // Preferência: empresa escolhida no pedido → tenant no perfil → mesma resolução que um gestor
+      // (superadmin/developer muitas vezes têm tenant_id NULL no perfil mas estão em tenant_users ou como gestor_email).
+      if (fromBodyCompany) {
+        companyId = fromBodyCompany
+      } else if (p.tenant_id) {
+        companyId = p.tenant_id
+      } else {
+        companyId = await resolveManagerCompanyId(
+          supabase,
+          session.user.id,
+          session.user.email ?? undefined,
+          p
+        )
+      }
     } else {
-      companyId = await resolveManagerCompanyId(
+      companyId = fromBodyCompany || (await resolveManagerCompanyId(
         supabase,
         session.user.id,
         session.user.email ?? undefined,
         p
-      )
+      ))
     }
 
     if (!companyId) {
       return NextResponse.json(
         {
           error:
-            'Não foi possível determinar a empresa. Se é administrador de plataforma, envie companyId (tenant) no pedido.',
+            'Não foi possível determinar a empresa. Administradores de plataforma sem tenant no perfil devem escolher a empresa no formulário, ou associe a sua conta (email de gestor da empresa, ou registo em tenant_users).',
         },
         { status: 400 }
       )
@@ -204,49 +241,80 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const origin = req.nextUrl.origin
-    const redirectTo = `${origin}/definir-senha`
+    const skipInvite = shouldSkipInviteEmail()
+    let devInitialPassword: string | undefined
 
-    const { data: invited, error: inviteError } = await admin.auth.admin.inviteUserByEmail(emailNorm, {
-      data: { full_name: nome },
-      redirectTo,
-    })
+    let newUserId: string
 
-    if (inviteError || !invited?.user?.id) {
-      const msg = inviteError?.message?.toLowerCase() ?? ''
-      const code = inviteError && 'code' in inviteError ? String(inviteError.code) : ''
-      if (
-        msg.includes('already been registered') ||
-        msg.includes('already registered') ||
-        msg.includes('user already exists')
-      ) {
-        return NextResponse.json(
-          { error: 'Este email já está registado na plataforma. Use outro email ou recupere a conta existente.' },
-          { status: 409 }
-        )
-      }
-      if (
-        code === 'over_email_send_rate_limit' ||
-        msg.includes('rate limit') ||
-        msg.includes('email rate limit')
-      ) {
+    if (skipInvite) {
+      devInitialPassword = generateDevInitialPassword()
+      const { data: created, error: createErr } = await admin.auth.admin.createUser({
+        email: emailNorm,
+        password: devInitialPassword,
+        email_confirm: true,
+        user_metadata: { full_name: nome },
+      })
+      if (createErr || !created?.user?.id) {
+        if (isAuthUserAlreadyExists(createErr ?? null)) {
+          return NextResponse.json(
+            {
+              error: 'Este email já está registado na plataforma. Use outro email ou recupere a conta existente.',
+            },
+            { status: 409 },
+          )
+        }
+        console.error('[colaboradores/criar] createUser (dev skip invite)', createErr)
         return NextResponse.json(
           {
-            error:
-              'Limite de envio de emails do Supabase atingido (muitos convites em pouco tempo). Aguarde alguns minutos, use outro projeto de teste ou configure SMTP próprio no Supabase.',
-            detail: inviteError?.message,
+            error: createErr?.message ?? 'Falha ao criar utilizador (modo dev sem convite).',
+            detail: createErr?.message,
           },
-          { status: 429 },
+          { status: 502 },
         )
       }
-      console.error('[colaboradores/criar] invite', inviteError)
-      return NextResponse.json(
-        { error: inviteError?.message ?? 'Falha ao enviar convite por email.', detail: inviteError?.message },
-        { status: 502 }
-      )
-    }
+      newUserId = created.user.id
+    } else {
+      const origin = req.nextUrl.origin
+      const redirectTo = `${origin}/definir-senha`
 
-    const newUserId = invited.user.id
+      const { data: invited, error: inviteError } = await admin.auth.admin.inviteUserByEmail(emailNorm, {
+        data: { full_name: nome },
+        redirectTo,
+      })
+
+      if (inviteError || !invited?.user?.id) {
+        const msg = inviteError?.message?.toLowerCase() ?? ''
+        const code = inviteError && 'code' in inviteError ? String(inviteError.code) : ''
+        if (isAuthUserAlreadyExists(inviteError ?? null)) {
+          return NextResponse.json(
+            {
+              error: 'Este email já está registado na plataforma. Use outro email ou recupere a conta existente.',
+            },
+            { status: 409 },
+          )
+        }
+        if (
+          code === 'over_email_send_rate_limit' ||
+          msg.includes('rate limit') ||
+          msg.includes('email rate limit')
+        ) {
+          return NextResponse.json(
+            {
+              error:
+                'Limite de envio de emails do Supabase atingido (muitos convites em pouco tempo). Aguarde alguns minutos, use outro projeto de teste ou configure SMTP próprio no Supabase. Em desenvolvimento local pode definir SKIP_INVITE_EMAIL=true no .env.local.',
+              detail: inviteError?.message,
+            },
+            { status: 429 },
+          )
+        }
+        console.error('[colaboradores/criar] invite', inviteError)
+        return NextResponse.json(
+          { error: inviteError?.message ?? 'Falha ao enviar convite por email.', detail: inviteError?.message },
+          { status: 502 },
+        )
+      }
+      newUserId = invited.user.id
+    }
 
     const { error: insertProfileError } = await admin.from('profiles').insert({
       id: newUserId,
@@ -329,12 +397,16 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    const message = skipInvite
+      ? 'Colaborador criado em modo desenvolvimento (sem email). Guarde a palavra-passe inicial mostrada abaixo — não será repetida. O colaborador pode iniciar sessão e alterar a palavra-passe nas definições.'
+      : 'Colaborador criado. Foi enviado um email com um link seguro para o colaborador definir a palavra-passe.'
+
     return NextResponse.json({
       ok: true,
       employeeId: empRow.id,
       companyId,
-      message:
-        'Colaborador criado. Foi enviado um email com um link seguro para o colaborador definir a palavra-passe.',
+      message,
+      ...(devInitialPassword ? { devInitialPassword, inviteSkipped: true as const } : {}),
     })
   } catch (e) {
     console.error('[colaboradores/criar]', e)
