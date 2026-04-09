@@ -345,7 +345,7 @@ export async function sendPurchaseThankYouEmail(data: PurchaseThankYouEmailData)
               </div>
               
               <p style="${STYLES.text}">
-                Uma fatura foi enviada para o seu email. Se tiver alguma questão, não hesite em contactar-nos.
+                Se tiver alguma questão sobre a sua compra, não hesite em contactar-nos.
               </p>
               
               <p style="${STYLES.text}">

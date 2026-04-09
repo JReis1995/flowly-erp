@@ -18,7 +18,6 @@ import {
   Settings, 
   BarChart3,
   FileText,
-  Calendar,
   Warehouse,
   LogOut,
   User,

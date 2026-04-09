@@ -1,0 +1,11 @@
+# Contexto do Projeto
+Stack: Next.js (App Router), Tailwind CSS, Node.js, Supabase, Vercel.
+Domínio: ERP de Recursos Humanos (Portugal, Legislação 2026, RGPD).
+
+# Regras de Ouro (CRÍTICO)
+1. BASE DE DADOS: NUNCA uses DROP TABLE. NUNCA recries tabelas existentes.
+2. SCHEMA: Antes de propor qualquer SQL, tens OBRIGATORIAMENTE de consultar o ficheiro `docs/supabase_full_schema.txt`.
+3. ALTERAÇÕES: Usa APENAS `ALTER TABLE` para adicionar ou modificar colunas.
+4. SEGURANÇA: Aplica sempre RLS (Row Level Security) focado em RGPD. O colaborador vê o seu id, o gestor vê a sua company_id.
+5. BYPASS: O utilizador com a role 'superadmin' tem sempre um bypass de RLS para testes.
+6. CÓDIGO: Respostas limpas, sem código "dummy". Usa tipagem estrita no TypeScript.

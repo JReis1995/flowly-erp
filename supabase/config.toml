@@ -1,0 +1,3 @@
+# Supabase local / deploy — ajuste project_id via CLI se necessário
+[functions.calculate_employee_costs]
+verify_jwt = true

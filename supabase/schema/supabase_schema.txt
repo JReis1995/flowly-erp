@@ -1,0 +1,618 @@
+| table_schema | table_name                 | column_name                  | data_type                   | is_nullable | primary_key | foreign_key                                  |
+| ------------ | -------------------------- | ---------------------------- | --------------------------- | ----------- | ----------- | -------------------------------------------- |
+| auth         | audit_log_entries          | instance_id                  | uuid                        | YES         |             |                                              |
+| auth         | audit_log_entries          | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| auth         | audit_log_entries          | payload                      | json                        | YES         |             |                                              |
+| auth         | audit_log_entries          | created_at                   | timestamp with time zone    | YES         |             |                                              |
+| auth         | audit_log_entries          | ip_address                   | character varying           | NO          |             |                                              |
+| auth         | custom_oauth_providers     | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| auth         | custom_oauth_providers     | provider_type                | text                        | NO          |             |                                              |
+| auth         | custom_oauth_providers     | identifier                   | text                        | NO          |             |                                              |
+| auth         | custom_oauth_providers     | name                         | text                        | NO          |             |                                              |
+| auth         | custom_oauth_providers     | client_id                    | text                        | NO          |             |                                              |
+| auth         | custom_oauth_providers     | client_secret                | text                        | NO          |             |                                              |
+| auth         | custom_oauth_providers     | acceptable_client_ids        | ARRAY                       | NO          |             |                                              |
+| auth         | custom_oauth_providers     | scopes                       | ARRAY                       | NO          |             |                                              |
+| auth         | custom_oauth_providers     | pkce_enabled                 | boolean                     | NO          |             |                                              |
+| auth         | custom_oauth_providers     | attribute_mapping            | jsonb                       | NO          |             |                                              |
+| auth         | custom_oauth_providers     | authorization_params         | jsonb                       | NO          |             |                                              |
+| auth         | custom_oauth_providers     | enabled                      | boolean                     | NO          |             |                                              |
+| auth         | custom_oauth_providers     | email_optional               | boolean                     | NO          |             |                                              |
+| auth         | custom_oauth_providers     | issuer                       | text                        | YES         |             |                                              |
+| auth         | custom_oauth_providers     | discovery_url                | text                        | YES         |             |                                              |
+| auth         | custom_oauth_providers     | skip_nonce_check             | boolean                     | NO          |             |                                              |
+| auth         | custom_oauth_providers     | cached_discovery             | jsonb                       | YES         |             |                                              |
+| auth         | custom_oauth_providers     | discovery_cached_at          | timestamp with time zone    | YES         |             |                                              |
+| auth         | custom_oauth_providers     | authorization_url            | text                        | YES         |             |                                              |
+| auth         | custom_oauth_providers     | token_url                    | text                        | YES         |             |                                              |
+| auth         | custom_oauth_providers     | userinfo_url                 | text                        | YES         |             |                                              |
+| auth         | custom_oauth_providers     | jwks_uri                     | text                        | YES         |             |                                              |
+| auth         | custom_oauth_providers     | created_at                   | timestamp with time zone    | NO          |             |                                              |
+| auth         | custom_oauth_providers     | updated_at                   | timestamp with time zone    | NO          |             |                                              |
+| auth         | flow_state                 | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| auth         | flow_state                 | user_id                      | uuid                        | YES         |             |                                              |
+| auth         | flow_state                 | auth_code                    | text                        | YES         |             |                                              |
+| auth         | flow_state                 | code_challenge_method        | USER-DEFINED                | YES         |             |                                              |
+| auth         | flow_state                 | code_challenge               | text                        | YES         |             |                                              |
+| auth         | flow_state                 | provider_type                | text                        | NO          |             |                                              |
+| auth         | flow_state                 | provider_access_token        | text                        | YES         |             |                                              |
+| auth         | flow_state                 | provider_refresh_token       | text                        | YES         |             |                                              |
+| auth         | flow_state                 | created_at                   | timestamp with time zone    | YES         |             |                                              |
+| auth         | flow_state                 | updated_at                   | timestamp with time zone    | YES         |             |                                              |
+| auth         | flow_state                 | authentication_method        | text                        | NO          |             |                                              |
+| auth         | flow_state                 | auth_code_issued_at          | timestamp with time zone    | YES         |             |                                              |
+| auth         | flow_state                 | invite_token                 | text                        | YES         |             |                                              |
+| auth         | flow_state                 | referrer                     | text                        | YES         |             |                                              |
+| auth         | flow_state                 | oauth_client_state_id        | uuid                        | YES         |             |                                              |
+| auth         | flow_state                 | linking_target_id            | uuid                        | YES         |             |                                              |
+| auth         | flow_state                 | email_optional               | boolean                     | NO          |             |                                              |
+| auth         | identities                 | provider_id                  | text                        | NO          |             |                                              |
+| auth         | identities                 | user_id                      | uuid                        | NO          |             |                                              |
+| auth         | identities                 | identity_data                | jsonb                       | NO          |             |                                              |
+| auth         | identities                 | provider                     | text                        | NO          |             |                                              |
+| auth         | identities                 | last_sign_in_at              | timestamp with time zone    | YES         |             |                                              |
+| auth         | identities                 | created_at                   | timestamp with time zone    | YES         |             |                                              |
+| auth         | identities                 | updated_at                   | timestamp with time zone    | YES         |             |                                              |
+| auth         | identities                 | email                        | text                        | YES         |             |                                              |
+| auth         | identities                 | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| auth         | instances                  | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| auth         | instances                  | uuid                         | uuid                        | YES         |             |                                              |
+| auth         | instances                  | raw_base_config              | text                        | YES         |             |                                              |
+| auth         | instances                  | created_at                   | timestamp with time zone    | YES         |             |                                              |
+| auth         | instances                  | updated_at                   | timestamp with time zone    | YES         |             |                                              |
+| auth         | mfa_amr_claims             | session_id                   | uuid                        | NO          |             |                                              |
+| auth         | mfa_amr_claims             | created_at                   | timestamp with time zone    | NO          |             |                                              |
+| auth         | mfa_amr_claims             | updated_at                   | timestamp with time zone    | NO          |             |                                              |
+| auth         | mfa_amr_claims             | authentication_method        | text                        | NO          |             |                                              |
+| auth         | mfa_amr_claims             | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| auth         | mfa_challenges             | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| auth         | mfa_challenges             | factor_id                    | uuid                        | NO          |             |                                              |
+| auth         | mfa_challenges             | created_at                   | timestamp with time zone    | NO          |             |                                              |
+| auth         | mfa_challenges             | verified_at                  | timestamp with time zone    | YES         |             |                                              |
+| auth         | mfa_challenges             | ip_address                   | inet                        | NO          |             |                                              |
+| auth         | mfa_challenges             | otp_code                     | text                        | YES         |             |                                              |
+| auth         | mfa_challenges             | web_authn_session_data       | jsonb                       | YES         |             |                                              |
+| auth         | mfa_factors                | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| auth         | mfa_factors                | user_id                      | uuid                        | NO          |             |                                              |
+| auth         | mfa_factors                | friendly_name                | text                        | YES         |             |                                              |
+| auth         | mfa_factors                | factor_type                  | USER-DEFINED                | NO          |             |                                              |
+| auth         | mfa_factors                | status                       | USER-DEFINED                | NO          |             |                                              |
+| auth         | mfa_factors                | created_at                   | timestamp with time zone    | NO          |             |                                              |
+| auth         | mfa_factors                | updated_at                   | timestamp with time zone    | NO          |             |                                              |
+| auth         | mfa_factors                | secret                       | text                        | YES         |             |                                              |
+| auth         | mfa_factors                | phone                        | text                        | YES         |             |                                              |
+| auth         | mfa_factors                | last_challenged_at           | timestamp with time zone    | YES         |             |                                              |
+| auth         | mfa_factors                | web_authn_credential         | jsonb                       | YES         |             |                                              |
+| auth         | mfa_factors                | web_authn_aaguid             | uuid                        | YES         |             |                                              |
+| auth         | mfa_factors                | last_webauthn_challenge_data | jsonb                       | YES         |             |                                              |
+| auth         | oauth_authorizations       | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| auth         | oauth_authorizations       | authorization_id             | text                        | NO          |             |                                              |
+| auth         | oauth_authorizations       | client_id                    | uuid                        | NO          |             |                                              |
+| auth         | oauth_authorizations       | user_id                      | uuid                        | YES         |             |                                              |
+| auth         | oauth_authorizations       | redirect_uri                 | text                        | NO          |             |                                              |
+| auth         | oauth_authorizations       | scope                        | text                        | NO          |             |                                              |
+| auth         | oauth_authorizations       | state                        | text                        | YES         |             |                                              |
+| auth         | oauth_authorizations       | resource                     | text                        | YES         |             |                                              |
+| auth         | oauth_authorizations       | code_challenge               | text                        | YES         |             |                                              |
+| auth         | oauth_authorizations       | code_challenge_method        | USER-DEFINED                | YES         |             |                                              |
+| auth         | oauth_authorizations       | response_type                | USER-DEFINED                | NO          |             |                                              |
+| auth         | oauth_authorizations       | status                       | USER-DEFINED                | NO          |             |                                              |
+| auth         | oauth_authorizations       | authorization_code           | text                        | YES         |             |                                              |
+| auth         | oauth_authorizations       | created_at                   | timestamp with time zone    | NO          |             |                                              |
+| auth         | oauth_authorizations       | expires_at                   | timestamp with time zone    | NO          |             |                                              |
+| auth         | oauth_authorizations       | approved_at                  | timestamp with time zone    | YES         |             |                                              |
+| auth         | oauth_authorizations       | nonce                        | text                        | YES         |             |                                              |
+| auth         | oauth_client_states        | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| auth         | oauth_client_states        | provider_type                | text                        | NO          |             |                                              |
+| auth         | oauth_client_states        | code_verifier                | text                        | YES         |             |                                              |
+| auth         | oauth_client_states        | created_at                   | timestamp with time zone    | NO          |             |                                              |
+| auth         | oauth_clients              | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| auth         | oauth_clients              | client_secret_hash           | text                        | YES         |             |                                              |
+| auth         | oauth_clients              | registration_type            | USER-DEFINED                | NO          |             |                                              |
+| auth         | oauth_clients              | redirect_uris                | text                        | NO          |             |                                              |
+| auth         | oauth_clients              | grant_types                  | text                        | NO          |             |                                              |
+| auth         | oauth_clients              | client_name                  | text                        | YES         |             |                                              |
+| auth         | oauth_clients              | client_uri                   | text                        | YES         |             |                                              |
+| auth         | oauth_clients              | logo_uri                     | text                        | YES         |             |                                              |
+| auth         | oauth_clients              | created_at                   | timestamp with time zone    | NO          |             |                                              |
+| auth         | oauth_clients              | updated_at                   | timestamp with time zone    | NO          |             |                                              |
+| auth         | oauth_clients              | deleted_at                   | timestamp with time zone    | YES         |             |                                              |
+| auth         | oauth_clients              | client_type                  | USER-DEFINED                | NO          |             |                                              |
+| auth         | oauth_clients              | token_endpoint_auth_method   | text                        | NO          |             |                                              |
+| auth         | oauth_consents             | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| auth         | oauth_consents             | user_id                      | uuid                        | NO          |             |                                              |
+| auth         | oauth_consents             | client_id                    | uuid                        | NO          |             |                                              |
+| auth         | oauth_consents             | scopes                       | text                        | NO          |             |                                              |
+| auth         | oauth_consents             | granted_at                   | timestamp with time zone    | NO          |             |                                              |
+| auth         | oauth_consents             | revoked_at                   | timestamp with time zone    | YES         |             |                                              |
+| auth         | one_time_tokens            | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| auth         | one_time_tokens            | user_id                      | uuid                        | NO          |             |                                              |
+| auth         | one_time_tokens            | token_type                   | USER-DEFINED                | NO          |             |                                              |
+| auth         | one_time_tokens            | token_hash                   | text                        | NO          |             |                                              |
+| auth         | one_time_tokens            | relates_to                   | text                        | NO          |             |                                              |
+| auth         | one_time_tokens            | created_at                   | timestamp without time zone | NO          |             |                                              |
+| auth         | one_time_tokens            | updated_at                   | timestamp without time zone | NO          |             |                                              |
+| auth         | refresh_tokens             | instance_id                  | uuid                        | YES         |             |                                              |
+| auth         | refresh_tokens             | id                           | bigint                      | NO          | PRIMARY KEY |                                              |
+| auth         | refresh_tokens             | token                        | character varying           | YES         |             |                                              |
+| auth         | refresh_tokens             | user_id                      | character varying           | YES         |             |                                              |
+| auth         | refresh_tokens             | revoked                      | boolean                     | YES         |             |                                              |
+| auth         | refresh_tokens             | created_at                   | timestamp with time zone    | YES         |             |                                              |
+| auth         | refresh_tokens             | updated_at                   | timestamp with time zone    | YES         |             |                                              |
+| auth         | refresh_tokens             | parent                       | character varying           | YES         |             |                                              |
+| auth         | refresh_tokens             | session_id                   | uuid                        | YES         |             |                                              |
+| auth         | saml_providers             | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| auth         | saml_providers             | sso_provider_id              | uuid                        | NO          |             |                                              |
+| auth         | saml_providers             | entity_id                    | text                        | NO          |             |                                              |
+| auth         | saml_providers             | metadata_xml                 | text                        | NO          |             |                                              |
+| auth         | saml_providers             | metadata_url                 | text                        | YES         |             |                                              |
+| auth         | saml_providers             | attribute_mapping            | jsonb                       | YES         |             |                                              |
+| auth         | saml_providers             | created_at                   | timestamp with time zone    | YES         |             |                                              |
+| auth         | saml_providers             | updated_at                   | timestamp with time zone    | YES         |             |                                              |
+| auth         | saml_providers             | name_id_format               | text                        | YES         |             |                                              |
+| auth         | saml_relay_states          | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| auth         | saml_relay_states          | sso_provider_id              | uuid                        | NO          |             |                                              |
+| auth         | saml_relay_states          | request_id                   | text                        | NO          |             |                                              |
+| auth         | saml_relay_states          | for_email                    | text                        | YES         |             |                                              |
+| auth         | saml_relay_states          | redirect_to                  | text                        | YES         |             |                                              |
+| auth         | saml_relay_states          | created_at                   | timestamp with time zone    | YES         |             |                                              |
+| auth         | saml_relay_states          | updated_at                   | timestamp with time zone    | YES         |             |                                              |
+| auth         | saml_relay_states          | flow_state_id                | uuid                        | YES         |             |                                              |
+| auth         | schema_migrations          | version                      | character varying           | NO          | PRIMARY KEY |                                              |
+| auth         | sessions                   | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| auth         | sessions                   | user_id                      | uuid                        | NO          |             |                                              |
+| auth         | sessions                   | created_at                   | timestamp with time zone    | YES         |             |                                              |
+| auth         | sessions                   | updated_at                   | timestamp with time zone    | YES         |             |                                              |
+| auth         | sessions                   | factor_id                    | uuid                        | YES         |             |                                              |
+| auth         | sessions                   | aal                          | USER-DEFINED                | YES         |             |                                              |
+| auth         | sessions                   | not_after                    | timestamp with time zone    | YES         |             |                                              |
+| auth         | sessions                   | refreshed_at                 | timestamp without time zone | YES         |             |                                              |
+| auth         | sessions                   | user_agent                   | text                        | YES         |             |                                              |
+| auth         | sessions                   | ip                           | inet                        | YES         |             |                                              |
+| auth         | sessions                   | tag                          | text                        | YES         |             |                                              |
+| auth         | sessions                   | oauth_client_id              | uuid                        | YES         |             |                                              |
+| auth         | sessions                   | refresh_token_hmac_key       | text                        | YES         |             |                                              |
+| auth         | sessions                   | refresh_token_counter        | bigint                      | YES         |             |                                              |
+| auth         | sessions                   | scopes                       | text                        | YES         |             |                                              |
+| auth         | sso_domains                | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| auth         | sso_domains                | sso_provider_id              | uuid                        | NO          |             |                                              |
+| auth         | sso_domains                | domain                       | text                        | NO          |             |                                              |
+| auth         | sso_domains                | created_at                   | timestamp with time zone    | YES         |             |                                              |
+| auth         | sso_domains                | updated_at                   | timestamp with time zone    | YES         |             |                                              |
+| auth         | sso_providers              | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| auth         | sso_providers              | resource_id                  | text                        | YES         |             |                                              |
+| auth         | sso_providers              | created_at                   | timestamp with time zone    | YES         |             |                                              |
+| auth         | sso_providers              | updated_at                   | timestamp with time zone    | YES         |             |                                              |
+| auth         | sso_providers              | disabled                     | boolean                     | YES         |             |                                              |
+| auth         | users                      | instance_id                  | uuid                        | YES         |             |                                              |
+| auth         | users                      | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| auth         | users                      | aud                          | character varying           | YES         |             |                                              |
+| auth         | users                      | role                         | character varying           | YES         |             |                                              |
+| auth         | users                      | email                        | character varying           | YES         |             |                                              |
+| auth         | users                      | encrypted_password           | character varying           | YES         |             |                                              |
+| auth         | users                      | email_confirmed_at           | timestamp with time zone    | YES         |             |                                              |
+| auth         | users                      | invited_at                   | timestamp with time zone    | YES         |             |                                              |
+| auth         | users                      | confirmation_token           | character varying           | YES         |             |                                              |
+| auth         | users                      | confirmation_sent_at         | timestamp with time zone    | YES         |             |                                              |
+| auth         | users                      | recovery_token               | character varying           | YES         |             |                                              |
+| auth         | users                      | recovery_sent_at             | timestamp with time zone    | YES         |             |                                              |
+| auth         | users                      | email_change_token_new       | character varying           | YES         |             |                                              |
+| auth         | users                      | email_change                 | character varying           | YES         |             |                                              |
+| auth         | users                      | email_change_sent_at         | timestamp with time zone    | YES         |             |                                              |
+| auth         | users                      | last_sign_in_at              | timestamp with time zone    | YES         |             |                                              |
+| auth         | users                      | raw_app_meta_data            | jsonb                       | YES         |             |                                              |
+| auth         | users                      | raw_user_meta_data           | jsonb                       | YES         |             |                                              |
+| auth         | users                      | is_super_admin               | boolean                     | YES         |             |                                              |
+| auth         | users                      | created_at                   | timestamp with time zone    | YES         |             |                                              |
+| auth         | users                      | updated_at                   | timestamp with time zone    | YES         |             |                                              |
+| auth         | users                      | phone                        | text                        | YES         |             |                                              |
+| auth         | users                      | phone_confirmed_at           | timestamp with time zone    | YES         |             |                                              |
+| auth         | users                      | phone_change                 | text                        | YES         |             |                                              |
+| auth         | users                      | phone_change_token           | character varying           | YES         |             |                                              |
+| auth         | users                      | phone_change_sent_at         | timestamp with time zone    | YES         |             |                                              |
+| auth         | users                      | confirmed_at                 | timestamp with time zone    | YES         |             |                                              |
+| auth         | users                      | email_change_token_current   | character varying           | YES         |             |                                              |
+| auth         | users                      | email_change_confirm_status  | smallint                    | YES         |             |                                              |
+| auth         | users                      | banned_until                 | timestamp with time zone    | YES         |             |                                              |
+| auth         | users                      | reauthentication_token       | character varying           | YES         |             |                                              |
+| auth         | users                      | reauthentication_sent_at     | timestamp with time zone    | YES         |             |                                              |
+| auth         | users                      | is_sso_user                  | boolean                     | NO          |             |                                              |
+| auth         | users                      | deleted_at                   | timestamp with time zone    | YES         |             |                                              |
+| auth         | users                      | is_anonymous                 | boolean                     | NO          |             |                                              |
+| auth         | webauthn_challenges        | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| auth         | webauthn_challenges        | user_id                      | uuid                        | YES         |             |                                              |
+| auth         | webauthn_challenges        | challenge_type               | text                        | NO          |             |                                              |
+| auth         | webauthn_challenges        | session_data                 | jsonb                       | NO          |             |                                              |
+| auth         | webauthn_challenges        | created_at                   | timestamp with time zone    | NO          |             |                                              |
+| auth         | webauthn_challenges        | expires_at                   | timestamp with time zone    | NO          |             |                                              |
+| auth         | webauthn_credentials       | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| auth         | webauthn_credentials       | user_id                      | uuid                        | NO          |             |                                              |
+| auth         | webauthn_credentials       | credential_id                | bytea                       | NO          |             |                                              |
+| auth         | webauthn_credentials       | public_key                   | bytea                       | NO          |             |                                              |
+| auth         | webauthn_credentials       | attestation_type             | text                        | NO          |             |                                              |
+| auth         | webauthn_credentials       | aaguid                       | uuid                        | YES         |             |                                              |
+| auth         | webauthn_credentials       | sign_count                   | bigint                      | NO          |             |                                              |
+| auth         | webauthn_credentials       | transports                   | jsonb                       | NO          |             |                                              |
+| auth         | webauthn_credentials       | backup_eligible              | boolean                     | NO          |             |                                              |
+| auth         | webauthn_credentials       | backed_up                    | boolean                     | NO          |             |                                              |
+| auth         | webauthn_credentials       | friendly_name                | text                        | NO          |             |                                              |
+| auth         | webauthn_credentials       | created_at                   | timestamp with time zone    | NO          |             |                                              |
+| auth         | webauthn_credentials       | updated_at                   | timestamp with time zone    | NO          |             |                                              |
+| auth         | webauthn_credentials       | last_used_at                 | timestamp with time zone    | YES         |             |                                              |
+| public       | contract_emissions         | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| public       | contract_emissions         | tenant_id                    | uuid                        | NO          |             | FOREIGN KEY -> public.tenants(id)            |
+| public       | contract_emissions         | template_id                  | uuid                        | NO          |             | FOREIGN KEY -> public.contract_templates(id) |
+| public       | contract_emissions         | employee_id                  | uuid                        | NO          |             | FOREIGN KEY -> public.employees(id)          |
+| public       | contract_emissions         | resolved_data                | jsonb                       | NO          |             |                                              |
+| public       | contract_emissions         | status                       | character varying           | YES         |             |                                              |
+| public       | contract_emissions         | signature_base64             | text                        | YES         |             |                                              |
+| public       | contract_emissions         | signature_mime               | character varying           | YES         |             |                                              |
+| public       | contract_emissions         | signed_at                    | timestamp with time zone    | YES         |             |                                              |
+| public       | contract_emissions         | signed_by_employee_id        | uuid                        | YES         |             | FOREIGN KEY -> public.employees(id)          |
+| public       | contract_emissions         | signature_ip                 | inet                        | YES         |             |                                              |
+| public       | contract_emissions         | signature_ua                 | text                        | YES         |             |                                              |
+| public       | contract_emissions         | generated_pdf_url            | text                        | YES         |             |                                              |
+| public       | contract_emissions         | emitted_at                   | timestamp with time zone    | YES         |             |                                              |
+| public       | contract_emissions         | valid_from                   | date                        | YES         |             |                                              |
+| public       | contract_emissions         | valid_until                  | date                        | YES         |             |                                              |
+| public       | contract_emissions         | created_at                   | timestamp with time zone    | YES         |             |                                              |
+| public       | contract_emissions         | updated_at                   | timestamp with time zone    | YES         |             |                                              |
+| public       | contract_emissions         | emitted_by                   | uuid                        | YES         |             |                                              |
+| public       | contract_emissions         | updated_by                   | uuid                        | YES         |             |                                              |
+| public       | contract_templates         | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| public       | contract_templates         | tenant_id                    | uuid                        | NO          |             | FOREIGN KEY -> public.tenants(id)            |
+| public       | contract_templates         | name                         | character varying           | NO          |             |                                              |
+| public       | contract_templates         | description                  | text                        | YES         |             |                                              |
+| public       | contract_templates         | content                      | text                        | NO          |             |                                              |
+| public       | contract_templates         | available_fields             | jsonb                       | YES         |             |                                              |
+| public       | contract_templates         | legal_validation_required    | boolean                     | YES         |             |                                              |
+| public       | contract_templates         | legal_validated_at           | timestamp with time zone    | YES         |             |                                              |
+| public       | contract_templates         | legal_validated_by           | uuid                        | YES         |             |                                              |
+| public       | contract_templates         | is_active                    | boolean                     | YES         |             |                                              |
+| public       | contract_templates         | created_at                   | timestamp with time zone    | YES         |             |                                              |
+| public       | contract_templates         | updated_at                   | timestamp with time zone    | YES         |             |                                              |
+| public       | contract_templates         | created_by                   | uuid                        | YES         |             |                                              |
+| public       | contract_templates         | updated_by                   | uuid                        | YES         |             |                                              |
+| public       | employee_document_logs     | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| public       | employee_document_logs     | tenant_id                    | uuid                        | NO          |             | FOREIGN KEY -> public.tenants(id)            |
+| public       | employee_document_logs     | employee_id                  | uuid                        | YES         |             | FOREIGN KEY -> public.employees(id)          |
+| public       | employee_document_logs     | document_id                  | uuid                        | YES         |             | FOREIGN KEY -> public.employee_documents(id) |
+| public       | employee_document_logs     | action                       | character varying           | NO          |             |                                              |
+| public       | employee_document_logs     | action_by                    | uuid                        | YES         |             |                                              |
+| public       | employee_document_logs     | ip_address                   | inet                        | YES         |             |                                              |
+| public       | employee_document_logs     | user_agent                   | text                        | YES         |             |                                              |
+| public       | employee_document_logs     | metadata                     | jsonb                       | YES         |             |                                              |
+| public       | employee_document_logs     | created_at                   | timestamp with time zone    | YES         |             |                                              |
+| public       | employee_documents         | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| public       | employee_documents         | tenant_id                    | uuid                        | NO          |             | FOREIGN KEY -> public.tenants(id)            |
+| public       | employee_documents         | employee_id                  | uuid                        | NO          |             | FOREIGN KEY -> public.employees(id)          |
+| public       | employee_documents         | type                         | USER-DEFINED                | NO          |             |                                              |
+| public       | employee_documents         | file_url                     | text                        | NO          |             |                                              |
+| public       | employee_documents         | file_name                    | character varying           | YES         |             |                                              |
+| public       | employee_documents         | file_size_bytes              | integer                     | YES         |             |                                              |
+| public       | employee_documents         | mime_type                    | character varying           | YES         |             |                                              |
+| public       | employee_documents         | metadata                     | jsonb                       | YES         |             |                                              |
+| public       | employee_documents         | valid_from                   | date                        | YES         |             |                                              |
+| public       | employee_documents         | valid_until                  | date                        | YES         |             |                                              |
+| public       | employee_documents         | is_valid                     | boolean                     | YES         |             |                                              |
+| public       | employee_documents         | created_at                   | timestamp with time zone    | YES         |             |                                              |
+| public       | employee_documents         | uploaded_by                  | uuid                        | YES         |             |                                              |
+| public       | employee_documents         | updated_at                   | timestamp with time zone    | YES         |             |                                              |
+| public       | employee_documents         | is_sensitive                 | boolean                     | YES         |             |                                              |
+| public       | employee_documents         | visible_to_employee          | boolean                     | YES         |             |                                              |
+| public       | employee_pending_contracts | id                           | uuid                        | YES         |             |                                              |
+| public       | employee_pending_contracts | tenant_id                    | uuid                        | YES         |             |                                              |
+| public       | employee_pending_contracts | employee_id                  | uuid                        | YES         |             |                                              |
+| public       | employee_pending_contracts | template_id                  | uuid                        | YES         |             |                                              |
+| public       | employee_pending_contracts | status                       | character varying           | YES         |             |                                              |
+| public       | employee_pending_contracts | emitted_at                   | timestamp with time zone    | YES         |             |                                              |
+| public       | employee_pending_contracts | valid_from                   | date                        | YES         |             |                                              |
+| public       | employee_pending_contracts | valid_until                  | date                        | YES         |             |                                              |
+| public       | employee_pending_contracts | template_name                | character varying           | YES         |             |                                              |
+| public       | employee_pending_contracts | template_description         | text                        | YES         |             |                                              |
+| public       | employee_pending_contracts | employee_name                | character varying           | YES         |             |                                              |
+| public       | employee_pending_contracts | employee_email               | character varying           | YES         |             |                                              |
+| public       | employees                  | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| public       | employees                  | tenant_id                    | uuid                        | NO          |             | FOREIGN KEY -> public.tenants(id)            |
+| public       | employees                  | nome                         | character varying           | NO          |             |                                              |
+| public       | employees                  | email                        | character varying           | YES         |             |                                              |
+| public       | employees                  | telefone                     | character varying           | YES         |             |                                              |
+| public       | employees                  | nif                          | character varying           | YES         |             |                                              |
+| public       | employees                  | niss                         | character varying           | YES         |             |                                              |
+| public       | employees                  | data_nascimento              | date                        | YES         |             |                                              |
+| public       | employees                  | nacionalidade                | character varying           | YES         |             |                                              |
+| public       | employees                  | cargo                        | character varying           | NO          |             |                                              |
+| public       | employees                  | departamento                 | character varying           | YES         |             |                                              |
+| public       | employees                  | data_admissao                | date                        | NO          |             |                                              |
+| public       | employees                  | data_saida                   | date                        | YES         |             |                                              |
+| public       | employees                  | tipo_contrato                | character varying           | YES         |             |                                              |
+| public       | employees                  | vencimento_base              | numeric                     | YES         |             |                                              |
+| public       | employees                  | moeda                        | character varying           | YES         |             |                                              |
+| public       | employees                  | subsidio_alimentacao         | numeric                     | YES         |             |                                              |
+| public       | employees                  | subsidio_férias              | numeric                     | YES         |             |                                              |
+| public       | employees                  | subsidio_natal               | numeric                     | YES         |             |                                              |
+| public       | employees                  | tsu_empresa_percent          | numeric                     | YES         |             |                                              |
+| public       | employees                  | seguro_acidentes_trabalho    | character varying           | YES         |             |                                              |
+| public       | employees                  | seguro_saude_ref             | character varying           | YES         |             |                                              |
+| public       | employees                  | status                       | character varying           | YES         |             |                                              |
+| public       | employees                  | observacoes                  | text                        | YES         |             |                                              |
+| public       | employees                  | created_at                   | timestamp with time zone    | YES         |             |                                              |
+| public       | employees                  | updated_at                   | timestamp with time zone    | YES         |             |                                              |
+| public       | employees                  | created_by                   | uuid                        | YES         |             |                                              |
+| public       | employees                  | updated_by                   | uuid                        | YES         |             |                                              |
+| public       | employees                  | insurance_value              | numeric                     | YES         |             |                                              |
+| public       | employees                  | work_location                | USER-DEFINED                | YES         |             |                                              |
+| public       | employees                  | work_location_address        | text                        | YES         |             |                                              |
+| public       | employees                  | company_id                   | uuid                        | NO          |             | FOREIGN KEY -> public.tenants(id)            |
+| public       | employees                  | local_trabalho_lat           | numeric                     | YES         |             |                                              |
+| public       | employees                  | local_trabalho_lng           | numeric                     | YES         |             |                                              |
+| public       | employees                  | local_trabalho_raio_metros   | integer                     | YES         |             |                                              |
+| public       | empresas                   | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| public       | empresas                   | nome_empresa                 | text                        | YES         |             |                                              |
+| public       | empresas                   | plano                        | text                        | YES         |             |                                              |
+| public       | empresas                   | modulo_logistica_ativo       | boolean                     | YES         |             |                                              |
+| public       | empresas                   | modulo_condominios_ativo     | boolean                     | YES         |             |                                              |
+| public       | empresas                   | created_at                   | timestamp with time zone    | YES         |             |                                              |
+| public       | frotas                     | id                           | bigint                      | NO          | PRIMARY KEY |                                              |
+| public       | frotas                     | empresa_id                   | uuid                        | YES         |             | FOREIGN KEY -> public.empresas(id)           |
+| public       | frotas                     | matricula                    | text                        | YES         |             |                                              |
+| public       | frotas                     | modelo                       | text                        | YES         |             |                                              |
+| public       | frotas                     | estado                       | text                        | YES         |             |                                              |
+| public       | geography_columns          | f_table_catalog              | name                        | YES         |             |                                              |
+| public       | geography_columns          | f_table_schema               | name                        | YES         |             |                                              |
+| public       | geography_columns          | f_table_name                 | name                        | YES         |             |                                              |
+| public       | geography_columns          | f_geography_column           | name                        | YES         |             |                                              |
+| public       | geography_columns          | coord_dimension              | integer                     | YES         |             |                                              |
+| public       | geography_columns          | srid                         | integer                     | YES         |             |                                              |
+| public       | geography_columns          | type                         | text                        | YES         |             |                                              |
+| public       | geometry_columns           | f_table_catalog              | character varying           | YES         |             |                                              |
+| public       | geometry_columns           | f_table_schema               | name                        | YES         |             |                                              |
+| public       | geometry_columns           | f_table_name                 | name                        | YES         |             |                                              |
+| public       | geometry_columns           | f_geometry_column            | name                        | YES         |             |                                              |
+| public       | geometry_columns           | coord_dimension              | integer                     | YES         |             |                                              |
+| public       | geometry_columns           | srid                         | integer                     | YES         |             |                                              |
+| public       | geometry_columns           | type                         | character varying           | YES         |             |                                              |
+| public       | pacotes_ia                 | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| public       | pacotes_ia                 | data_criacao                 | timestamp with time zone    | YES         |             |                                              |
+| public       | pacotes_ia                 | nome                         | character varying           | NO          |             |                                              |
+| public       | pacotes_ia                 | creditos                     | integer                     | NO          |             |                                              |
+| public       | pacotes_ia                 | preco_base                   | numeric                     | NO          |             |                                              |
+| public       | pacotes_ia                 | link_pagamento               | character varying           | YES         |             |                                              |
+| public       | pacotes_ia                 | status                       | character varying           | YES         |             |                                              |
+| public       | pacotes_ia                 | ultima_modificacao           | timestamp with time zone    | YES         |             |                                              |
+| public       | pacotes_ia                 | created_by                   | uuid                        | YES         |             |                                              |
+| public       | payroll_monthly_summary    | tenant_id                    | uuid                        | YES         |             |                                              |
+| public       | payroll_monthly_summary    | year                         | integer                     | YES         |             |                                              |
+| public       | payroll_monthly_summary    | month                        | integer                     | YES         |             |                                              |
+| public       | payroll_monthly_summary    | total_employees              | bigint                      | YES         |             |                                              |
+| public       | payroll_monthly_summary    | total_base_salary            | numeric                     | YES         |             |                                              |
+| public       | payroll_monthly_summary    | total_net_salary             | numeric                     | YES         |             |                                              |
+| public       | payroll_monthly_summary    | total_company_cost           | numeric                     | YES         |             |                                              |
+| public       | payroll_monthly_summary    | total_ss_discount            | numeric                     | YES         |             |                                              |
+| public       | payroll_monthly_summary    | total_irs_discount           | numeric                     | YES         |             |                                              |
+| public       | payroll_monthly_summary    | total_tsu                    | numeric                     | YES         |             |                                              |
+| public       | payroll_monthly_summary    | total_provisions             | numeric                     | YES         |             |                                              |
+| public       | payroll_monthly_summary    | avg_net_salary               | numeric                     | YES         |             |                                              |
+| public       | payroll_monthly_summary    | first_calculation            | timestamp with time zone    | YES         |             |                                              |
+| public       | payroll_monthly_summary    | last_calculation             | timestamp with time zone    | YES         |             |                                              |
+| public       | payroll_records            | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| public       | payroll_records            | employee_id                  | uuid                        | NO          |             | FOREIGN KEY -> public.employees(id)          |
+| public       | payroll_records            | tenant_id                    | uuid                        | NO          |             | FOREIGN KEY -> public.tenants(id)            |
+| public       | payroll_records            | month                        | integer                     | NO          |             |                                              |
+| public       | payroll_records            | year                         | integer                     | NO          |             |                                              |
+| public       | payroll_records            | base_salary                  | numeric                     | NO          |             |                                              |
+| public       | payroll_records            | days_worked                  | integer                     | NO          |             |                                              |
+| public       | payroll_records            | days_vacation                | integer                     | NO          |             |                                              |
+| public       | payroll_records            | meal_allowance               | numeric                     | NO          |             |                                              |
+| public       | payroll_records            | meal_allowance_exempt        | numeric                     | NO          |             |                                              |
+| public       | payroll_records            | ss_discount                  | numeric                     | NO          |             |                                              |
+| public       | payroll_records            | irs_discount                 | numeric                     | NO          |             |                                              |
+| public       | payroll_records            | tsu_company                  | numeric                     | NO          |             |                                              |
+| public       | payroll_records            | insurance                    | numeric                     | NO          |             |                                              |
+| public       | payroll_records            | net_salary                   | numeric                     | NO          |             |                                              |
+| public       | payroll_records            | total_company_cost           | numeric                     | NO          |             |                                              |
+| public       | payroll_records            | vacation_provision           | numeric                     | NO          |             |                                              |
+| public       | payroll_records            | christmas_provision          | numeric                     | NO          |             |                                              |
+| public       | payroll_records            | severance_provision          | numeric                     | NO          |             |                                              |
+| public       | payroll_records            | total_provisions             | numeric                     | NO          |             |                                              |
+| public       | payroll_records            | calculated_at                | timestamp with time zone    | NO          |             |                                              |
+| public       | payroll_records            | created_at                   | timestamp with time zone    | YES         |             |                                              |
+| public       | payroll_records            | updated_at                   | timestamp with time zone    | YES         |             |                                              |
+| public       | payroll_records            | created_by                   | uuid                        | YES         |             |                                              |
+| public       | payroll_records            | updated_by                   | uuid                        | YES         |             |                                              |
+| public       | planos                     | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| public       | planos                     | data_criacao                 | timestamp with time zone    | YES         |             |                                              |
+| public       | planos                     | nome                         | character varying           | NO          |             |                                              |
+| public       | planos                     | descricao                    | text                        | YES         |             |                                              |
+| public       | planos                     | modulos                      | jsonb                       | NO          |             |                                              |
+| public       | planos                     | preco_mensal                 | numeric                     | NO          |             |                                              |
+| public       | planos                     | preco_anual                  | numeric                     | NO          |             |                                              |
+| public       | planos                     | preco_inicial                | numeric                     | YES         |             |                                              |
+| public       | planos                     | desconto_percentual          | numeric                     | YES         |             |                                              |
+| public       | planos                     | desconto_validade            | date                        | YES         |             |                                              |
+| public       | planos                     | mensalidades_oferta          | integer                     | YES         |             |                                              |
+| public       | planos                     | creditos_ia_incluidos        | integer                     | YES         |             |                                              |
+| public       | planos                     | status                       | character varying           | YES         |             |                                              |
+| public       | planos                     | ordem_display                | integer                     | YES         |             |                                              |
+| public       | planos                     | created_at                   | timestamp with time zone    | YES         |             |                                              |
+| public       | planos                     | updated_at                   | timestamp with time zone    | YES         |             |                                              |
+| public       | planos                     | created_by                   | uuid                        | YES         |             |                                              |
+| public       | profiles                   | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| public       | profiles                   | tenant_id                    | uuid                        | YES         |             |                                              |
+| public       | profiles                   | nome                         | text                        | YES         |             |                                              |
+| public       | profiles                   | role                         | text                        | YES         |             |                                              |
+| public       | profiles                   | avatar_url                   | text                        | YES         |             |                                              |
+| public       | profiles                   | created_at                   | timestamp with time zone    | NO          |             |                                              |
+| public       | purchases                  | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| public       | purchases                  | tenant_id                    | uuid                        | NO          |             | FOREIGN KEY -> public.tenants(id)            |
+| public       | purchases                  | pacote_id                    | uuid                        | YES         |             | FOREIGN KEY -> public.pacotes_ia(id)         |
+| public       | purchases                  | pacote_nome                  | character varying           | YES         |             |                                              |
+| public       | purchases                  | creditos_adquiridos          | integer                     | NO          |             |                                              |
+| public       | purchases                  | valor_pago                   | numeric                     | NO          |             |                                              |
+| public       | purchases                  | stripe_session_id            | character varying           | YES         |             |                                              |
+| public       | purchases                  | stripe_payment_intent        | character varying           | YES         |             |                                              |
+| public       | purchases                  | status                       | character varying           | YES         |             |                                              |
+| public       | purchases                  | created_at                   | timestamp with time zone    | YES         |             |                                              |
+| public       | purchases                  | updated_at                   | timestamp with time zone    | YES         |             |                                              |
+| public       | spatial_ref_sys            | srid                         | integer                     | NO          | PRIMARY KEY |                                              |
+| public       | spatial_ref_sys            | auth_name                    | character varying           | YES         |             |                                              |
+| public       | spatial_ref_sys            | auth_srid                    | integer                     | YES         |             |                                              |
+| public       | spatial_ref_sys            | srtext                       | character varying           | YES         |             |                                              |
+| public       | spatial_ref_sys            | proj4text                    | character varying           | YES         |             |                                              |
+| public       | stripe_webhook_logs        | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| public       | stripe_webhook_logs        | event_id                     | character varying           | YES         |             |                                              |
+| public       | stripe_webhook_logs        | event_type                   | character varying           | YES         |             |                                              |
+| public       | stripe_webhook_logs        | payload                      | jsonb                       | YES         |             |                                              |
+| public       | stripe_webhook_logs        | processed                    | boolean                     | YES         |             |                                              |
+| public       | stripe_webhook_logs        | error_message                | text                        | YES         |             |                                              |
+| public       | stripe_webhook_logs        | created_at                   | timestamp with time zone    | YES         |             |                                              |
+| public       | tenant_users               | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| public       | tenant_users               | tenant_id                    | uuid                        | NO          |             | FOREIGN KEY -> public.tenants(id)            |
+| public       | tenant_users               | user_id                      | uuid                        | NO          |             |                                              |
+| public       | tenant_users               | role                         | character varying           | YES         |             |                                              |
+| public       | tenant_users               | created_at                   | timestamp with time zone    | YES         |             |                                              |
+| public       | tenant_users               | created_by                   | uuid                        | YES         |             |                                              |
+| public       | tenant_users               | modulo_logistica             | boolean                     | YES         |             |                                              |
+| public       | tenant_users               | modulo_condominios           | boolean                     | YES         |             |                                              |
+| public       | tenant_users               | modulo_frota                 | boolean                     | YES         |             |                                              |
+| public       | tenant_users               | modulo_rh                    | boolean                     | YES         |             |                                              |
+| public       | tenant_users               | modulo_cc                    | boolean                     | YES         |             |                                              |
+| public       | tenant_users               | modulo_ia                    | boolean                     | YES         |             |                                              |
+| public       | tenant_users               | modulo_fichas_tecnicas       | boolean                     | YES         |             |                                              |
+| public       | tenant_users               | modulo_importacao            | boolean                     | YES         |             |                                              |
+| public       | tenant_users               | modulo_acessos               | boolean                     | YES         |             |                                              |
+| public       | tenant_users               | modulo_clientes              | boolean                     | YES         |             |                                              |
+| public       | tenant_users               | modulo_dashboard             | boolean                     | YES         |             |                                              |
+| public       | tenant_users               | modulo_central_saas          | boolean                     | YES         |             |                                              |
+| public       | tenant_users               | ver_creditos_ia              | boolean                     | YES         |             |                                              |
+| public       | tenant_users               | comprar_creditos_ia          | boolean                     | YES         |             |                                              |
+| public       | tenant_users               | ver_dividas                  | boolean                     | YES         |             |                                              |
+| public       | tenant_users               | gestao_utilizadores          | boolean                     | YES         |             |                                              |
+| public       | tenants                    | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| public       | tenants                    | nome_empresa                 | character varying           | NO          |             |                                              |
+| public       | tenants                    | ramo_atividade               | character varying           | YES         |             |                                              |
+| public       | tenants                    | nif                          | character varying           | YES         |             |                                              |
+| public       | tenants                    | gestor_nome                  | character varying           | NO          |             |                                              |
+| public       | tenants                    | gestor_email                 | character varying           | NO          |             |                                              |
+| public       | tenants                    | plano_id                     | uuid                        | YES         |             | FOREIGN KEY -> public.planos(id)             |
+| public       | tenants                    | plano_nome                   | character varying           | YES         |             |                                              |
+| public       | tenants                    | desconto_percentual          | numeric                     | YES         |             |                                              |
+| public       | tenants                    | desconto_tipo                | character varying           | YES         |             |                                              |
+| public       | tenants                    | desconto_validade            | date                        | YES         |             |                                              |
+| public       | tenants                    | creditos_ia                  | integer                     | YES         |             |                                              |
+| public       | tenants                    | creditos_ia_consumidos       | integer                     | YES         |             |                                              |
+| public       | tenants                    | modulo_logistica             | boolean                     | YES         |             |                                              |
+| public       | tenants                    | modulo_condominios           | boolean                     | YES         |             |                                              |
+| public       | tenants                    | modulo_frota                 | boolean                     | YES         |             |                                              |
+| public       | tenants                    | modulo_rh                    | boolean                     | YES         |             |                                              |
+| public       | tenants                    | modulo_cc                    | boolean                     | YES         |             |                                              |
+| public       | tenants                    | modulo_ia                    | boolean                     | YES         |             |                                              |
+| public       | tenants                    | status                       | character varying           | YES         |             |                                              |
+| public       | tenants                    | validade_acesso              | date                        | YES         |             |                                              |
+| public       | tenants                    | data_registo                 | timestamp with time zone    | YES         |             |                                              |
+| public       | tenants                    | ultimo_acesso                | timestamp with time zone    | YES         |             |                                              |
+| public       | tenants                    | alerta_divida                | boolean                     | YES         |             |                                              |
+| public       | tenants                    | alerta_divida_mensagem       | text                        | YES         |             |                                              |
+| public       | tenants                    | divida_acumulada             | numeric                     | YES         |             |                                              |
+| public       | tenants                    | created_at                   | timestamp with time zone    | YES         |             |                                              |
+| public       | tenants                    | updated_at                   | timestamp with time zone    | YES         |             |                                              |
+| public       | tenants                    | created_by                   | uuid                        | YES         |             |                                              |
+| public       | tenants                    | modulo_fichas_tecnicas       | boolean                     | YES         |             |                                              |
+| public       | tenants                    | modulo_importacao            | boolean                     | YES         |             |                                              |
+| public       | tenants                    | modulo_acessos               | boolean                     | YES         |             |                                              |
+| public       | tenants                    | modulo_clientes              | boolean                     | YES         |             |                                              |
+| public       | tenants                    | modulo_dashboard             | boolean                     | YES         |             |                                              |
+| public       | tenants                    | modulo_central_saas          | boolean                     | YES         |             |                                              |
+| public       | timesheet_daily_summary    | company_id                   | uuid                        | YES         |             |                                              |
+| public       | timesheet_daily_summary    | employee_id                  | uuid                        | YES         |             |                                              |
+| public       | timesheet_daily_summary    | employee_name                | character varying           | YES         |             |                                              |
+| public       | timesheet_daily_summary    | work_date                    | date                        | YES         |             |                                              |
+| public       | timesheet_daily_summary    | total_checkins               | bigint                      | YES         |             |                                              |
+| public       | timesheet_daily_summary    | total_checkouts              | bigint                      | YES         |             |                                              |
+| public       | timesheet_daily_summary    | first_checkin                | timestamp with time zone    | YES         |             |                                              |
+| public       | timesheet_daily_summary    | last_checkout                | timestamp with time zone    | YES         |             |                                              |
+| public       | timesheet_daily_summary    | pending_count                | bigint                      | YES         |             |                                              |
+| public       | timesheet_daily_summary    | rejected_count               | bigint                      | YES         |             |                                              |
+| public       | timesheets                 | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| public       | timesheets                 | tenant_id                    | uuid                        | NO          |             | FOREIGN KEY -> public.tenants(id)            |
+| public       | timesheets                 | company_id                   | uuid                        | NO          |             | FOREIGN KEY -> public.tenants(id)            |
+| public       | timesheets                 | employee_id                  | uuid                        | NO          |             | FOREIGN KEY -> public.employees(id)          |
+| public       | timesheets                 | entry_type                   | USER-DEFINED                | NO          |             |                                              |
+| public       | timesheets                 | entry_timestamp              | timestamp with time zone    | NO          |             |                                              |
+| public       | timesheets                 | location_data                | jsonb                       | YES         |             |                                              |
+| public       | timesheets                 | status                       | USER-DEFINED                | YES         |             |                                              |
+| public       | timesheets                 | validated_by                 | uuid                        | YES         |             |                                              |
+| public       | timesheets                 | validated_at                 | timestamp with time zone    | YES         |             |                                              |
+| public       | timesheets                 | validation_notes             | text                        | YES         |             |                                              |
+| public       | timesheets                 | device_info                  | jsonb                       | YES         |             |                                              |
+| public       | timesheets                 | expected_work_location       | USER-DEFINED                | YES         |             |                                              |
+| public       | timesheets                 | created_at                   | timestamp with time zone    | YES         |             |                                              |
+| public       | timesheets                 | updated_at                   | timestamp with time zone    | YES         |             |                                              |
+| public       | timesheets                 | created_by                   | uuid                        | YES         |             |                                              |
+| public       | timesheets                 | updated_by                   | uuid                        | YES         |             |                                              |
+| storage      | buckets                    | id                           | text                        | NO          | PRIMARY KEY |                                              |
+| storage      | buckets                    | name                         | text                        | NO          |             |                                              |
+| storage      | buckets                    | owner                        | uuid                        | YES         |             |                                              |
+| storage      | buckets                    | created_at                   | timestamp with time zone    | YES         |             |                                              |
+| storage      | buckets                    | updated_at                   | timestamp with time zone    | YES         |             |                                              |
+| storage      | buckets                    | public                       | boolean                     | YES         |             |                                              |
+| storage      | buckets                    | avif_autodetection           | boolean                     | YES         |             |                                              |
+| storage      | buckets                    | file_size_limit              | bigint                      | YES         |             |                                              |
+| storage      | buckets                    | allowed_mime_types           | ARRAY                       | YES         |             |                                              |
+| storage      | buckets                    | owner_id                     | text                        | YES         |             |                                              |
+| storage      | buckets                    | type                         | USER-DEFINED                | NO          |             |                                              |
+| storage      | buckets_analytics          | name                         | text                        | NO          |             |                                              |
+| storage      | buckets_analytics          | type                         | USER-DEFINED                | NO          |             |                                              |
+| storage      | buckets_analytics          | format                       | text                        | NO          |             |                                              |
+| storage      | buckets_analytics          | created_at                   | timestamp with time zone    | NO          |             |                                              |
+| storage      | buckets_analytics          | updated_at                   | timestamp with time zone    | NO          |             |                                              |
+| storage      | buckets_analytics          | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| storage      | buckets_analytics          | deleted_at                   | timestamp with time zone    | YES         |             |                                              |
+| storage      | buckets_vectors            | id                           | text                        | NO          |             |                                              |
+| storage      | buckets_vectors            | type                         | USER-DEFINED                | NO          |             |                                              |
+| storage      | buckets_vectors            | created_at                   | timestamp with time zone    | NO          |             |                                              |
+| storage      | buckets_vectors            | updated_at                   | timestamp with time zone    | NO          |             |                                              |
+| storage      | migrations                 | id                           | integer                     | NO          |             |                                              |
+| storage      | migrations                 | name                         | character varying           | NO          |             |                                              |
+| storage      | migrations                 | hash                         | character varying           | NO          |             |                                              |
+| storage      | migrations                 | executed_at                  | timestamp without time zone | YES         |             |                                              |
+| storage      | objects                    | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| storage      | objects                    | bucket_id                    | text                        | YES         |             |                                              |
+| storage      | objects                    | name                         | text                        | YES         |             |                                              |
+| storage      | objects                    | owner                        | uuid                        | YES         |             |                                              |
+| storage      | objects                    | created_at                   | timestamp with time zone    | YES         |             |                                              |
+| storage      | objects                    | updated_at                   | timestamp with time zone    | YES         |             |                                              |
+| storage      | objects                    | last_accessed_at             | timestamp with time zone    | YES         |             |                                              |
+| storage      | objects                    | metadata                     | jsonb                       | YES         |             |                                              |
+| storage      | objects                    | path_tokens                  | ARRAY                       | YES         |             |                                              |
+| storage      | objects                    | version                      | text                        | YES         |             |                                              |
+| storage      | objects                    | owner_id                     | text                        | YES         |             |                                              |
+| storage      | objects                    | user_metadata                | jsonb                       | YES         |             |                                              |
+| storage      | s3_multipart_uploads       | id                           | text                        | NO          | PRIMARY KEY |                                              |
+| storage      | s3_multipart_uploads       | in_progress_size             | bigint                      | NO          |             |                                              |
+| storage      | s3_multipart_uploads       | upload_signature             | text                        | NO          |             |                                              |
+| storage      | s3_multipart_uploads       | bucket_id                    | text                        | NO          |             |                                              |
+| storage      | s3_multipart_uploads       | key                          | text                        | NO          |             |                                              |
+| storage      | s3_multipart_uploads       | version                      | text                        | NO          |             |                                              |
+| storage      | s3_multipart_uploads       | owner_id                     | text                        | YES         |             |                                              |
+| storage      | s3_multipart_uploads       | created_at                   | timestamp with time zone    | NO          |             |                                              |
+| storage      | s3_multipart_uploads       | user_metadata                | jsonb                       | YES         |             |                                              |
+| storage      | s3_multipart_uploads_parts | id                           | uuid                        | NO          | PRIMARY KEY |                                              |
+| storage      | s3_multipart_uploads_parts | upload_id                    | text                        | NO          |             |                                              |
+| storage      | s3_multipart_uploads_parts | size                         | bigint                      | NO          |             |                                              |
+| storage      | s3_multipart_uploads_parts | part_number                  | integer                     | NO          |             |                                              |
+| storage      | s3_multipart_uploads_parts | bucket_id                    | text                        | NO          |             |                                              |
+| storage      | s3_multipart_uploads_parts | key                          | text                        | NO          |             |                                              |
+| storage      | s3_multipart_uploads_parts | etag                         | text                        | NO          |             |                                              |
+| storage      | s3_multipart_uploads_parts | owner_id                     | text                        | YES         |             |                                              |
+| storage      | s3_multipart_uploads_parts | version                      | text                        | NO          |             |                                              |
+| storage      | s3_multipart_uploads_parts | created_at                   | timestamp with time zone    | NO          |             |                                              |
+| storage      | vector_indexes             | id                           | text                        | NO          |             |                                              |
+| storage      | vector_indexes             | name                         | text                        | NO          |             |                                              |
+| storage      | vector_indexes             | bucket_id                    | text                        | NO          |             |                                              |
+| storage      | vector_indexes             | data_type                    | text                        | NO          |             |                                              |
+| storage      | vector_indexes             | dimension                    | integer                     | NO          |             |                                              |
+| storage      | vector_indexes             | distance_metric              | text                        | NO          |             |                                              |
+| storage      | vector_indexes             | metadata_configuration       | jsonb                       | YES         |             |                                              |
+| storage      | vector_indexes             | created_at                   | timestamp with time zone    | NO          |             |                                              |
+| storage      | vector_indexes             | updated_at                   | timestamp with time zone    | NO          |             |                                              |
