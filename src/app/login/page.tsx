@@ -13,7 +13,8 @@ function LoginForm() {
   const [error, setError] = useState('')
   const router = useRouter()
   const searchParams = useSearchParams()
-  const nextUrl = searchParams.get('next') || '/'
+  const nextUrl = searchParams.get('next')
+  const destinationAfterLogin = nextUrl || '/colaboradores'
   const supabase = createBrowserClient()
 
   // Verificar se já está autenticado
@@ -21,12 +22,14 @@ function LoginForm() {
     const checkAuth = async () => {
       if (!supabase) return
       const { data: { session } } = await supabase.auth.getSession()
-      if (session) {
+      // Só redirecionar automaticamente se veio de rota protegida com `next`.
+      // Ao abrir /login diretamente, manter o ecrã visível.
+      if (session && nextUrl) {
         router.push(nextUrl)
       }
     }
     checkAuth()
-  }, [router, nextUrl])
+  }, [router, nextUrl, supabase])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -65,12 +68,12 @@ function LoginForm() {
         const { data: { session } } = await supabase.auth.getSession()
         console.log('[Login] Sessão após login:', { hasSession: !!session })
         
-        console.log('[Login] Sucesso! Redirecionar para:', nextUrl)
+        console.log('[Login] Sucesso! Redirecionar para:', destinationAfterLogin)
         // Usar router.refresh() primeiro para atualizar o estado do servidor, depois redirect
         router.refresh()
         // Pequeno delay para garantir que o middleware recebe os cookies atualizados
         setTimeout(() => {
-          window.location.href = nextUrl
+          window.location.href = destinationAfterLogin
         }, 50)
       } else {
         setError('Resposta inesperada do servidor.')

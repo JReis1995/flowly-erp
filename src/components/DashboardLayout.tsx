@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useImpersonate } from '@/stores/impersonateStore'
 import { ImpersonateBanner } from '@/components/impersonate/ImpersonateBanner'
 import { ImpersonateDropdown } from '@/components/impersonate/ImpersonateDropdown'
@@ -45,7 +45,8 @@ interface Module {
 }
 
 const modules: Module[] = [
-  { id: 'pagina-inicial', name: 'Página Inicial', icon: Home, active: true, path: '/', alwaysShow: true },
+  { id: 'pagina-inicial', name: 'Página Inicial', icon: Home, active: true, path: '/colaboradores', alwaysShow: true },
+  { id: 'landing-publica', name: 'Site Flowly', icon: Eye, active: true, path: '/' },
   { id: 'central-saas', name: 'Central SaaS', icon: Home, active: true, path: '/central-saas', moduleName: 'central_saas' },
   { id: 'colaboradores', name: 'Colaboradores', icon: Users, active: true, path: '/colaboradores', moduleName: 'rh' },
   { id: 'acessos', name: 'Acessos', icon: Key, active: true, path: '/acessos', moduleName: 'acessos' },
@@ -66,6 +67,7 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const { isActive: isImpersonateActive, clearImpersonate, tenantId, isDemoMode, demoModules } = useImpersonate()
   
   // Fetch permissions with cascade logic (tenant → tenant_users)
@@ -82,6 +84,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   
   // Função para verificar se um módulo deve ser mostrado
   const shouldShowModule = (module: Module): boolean => {
+    if (module.id === 'landing-publica') {
+      if (isImpersonateActive || isDemoMode) return false
+      return userData.role === 'superadmin' || userData.role === 'developer'
+    }
+
+    // "Central SaaS" é área estritamente interna.
+    if (module.moduleName === 'central_saas') {
+      if (isImpersonateActive || isDemoMode) return false
+      return userData.role === 'superadmin' || userData.role === 'developer'
+    }
+
     // Sempre mostrar se alwaysShow for true (ex: Página Inicial)
     if (module.alwaysShow) return true
     
@@ -246,6 +259,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [pacotes, setPacotes] = useState<any[]>([])
   const [pacotesLoading, setPacotesLoading] = useState(false)
   const pacotesFetched = useRef(false)
+
+  useEffect(() => {
+    const matchedModule = modules.find((module) => {
+      if (module.path === '/') return pathname === '/'
+      return pathname === module.path || pathname.startsWith(`${module.path}/`)
+    })
+
+    if (matchedModule) {
+      setActiveModule(matchedModule.id)
+    }
+  }, [pathname])
 
   // Buscar pacotes reais do Supabase quando abrir modal
   useEffect(() => {

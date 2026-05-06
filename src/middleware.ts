@@ -1,7 +1,6 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-
-const ALLOWED_ROLES = ['superadmin', 'developer']
+import { INTERNAL_ALLOWED_ROLES, isClientRoute, isInternalRoute, isPublicRoute } from '@/lib/auth/route-access'
 
 // Emails de teste que sempre têm acesso superadmin (para desenvolvimento)
 const SUPERADMIN_EMAILS = [
@@ -57,52 +56,65 @@ function createMiddlewareClient(request: NextRequest, response: NextResponse) {
 }
 
 export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname
   let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
   })
 
-  // Proteger rotas /central-saas
-  if (request.nextUrl.pathname.startsWith('/central-saas')) {
-    const supabase = createMiddlewareClient(request, response)
+  // Rotas públicas não exigem autenticação.
+  if (isPublicRoute(pathname)) {
+    return response
+  }
 
-    if (!supabase) {
-      // Se Supabase não configurado, redirecionar para login
-      const loginUrl = new URL('/login', request.url)
-      loginUrl.searchParams.set('next', request.nextUrl.pathname + request.nextUrl.search)
-      return NextResponse.redirect(loginUrl)
-    }
+  const isInternal = isInternalRoute(pathname)
+  const isClient = isClientRoute(pathname)
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
+  // Não interferir em rotas que ainda não foram classificadas.
+  if (!isInternal && !isClient) {
+    return response
+  }
 
-    if (userError || !user) {
-      // Redirecionar para login com URL de destino
-      const loginUrl = new URL('/login', request.url)
-      loginUrl.searchParams.set('next', request.nextUrl.pathname + request.nextUrl.search)
-      return NextResponse.redirect(loginUrl)
-    }
+  const supabase = createMiddlewareClient(request, response)
 
-    // Verificar se é email de superadmin de teste
-    if (SUPERADMIN_EMAILS.includes(user.email || '')) {
-      return response // Permitir acesso
-    }
+  if (!supabase) {
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('next', request.nextUrl.pathname + request.nextUrl.search)
+    return NextResponse.redirect(loginUrl)
+  }
 
-    // Verificar role do utilizador na tabela profiles
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) {
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('next', request.nextUrl.pathname + request.nextUrl.search)
+    return NextResponse.redirect(loginUrl)
+  }
 
-    if (profileError || !profile || !ALLOWED_ROLES.includes(profile.role)) {
-      return NextResponse.redirect(new URL('/', request.url))
-    }
+  // Rotas de cliente exigem apenas sessão válida.
+  if (!isInternal) {
+    return response
+  }
+
+  // Verificar se é email de superadmin de teste
+  if (SUPERADMIN_EMAILS.includes(user.email || '')) {
+    return response
+  }
+
+  // Rotas internas exigem role de superadmin/developer
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (profileError || !profile || !INTERNAL_ALLOWED_ROLES.includes(profile.role as (typeof INTERNAL_ALLOWED_ROLES)[number])) {
+    return NextResponse.redirect(new URL('/', request.url))
   }
 
   return response
 }
 
 export const config = {
-  matcher: ['/central-saas/:path*'],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 }

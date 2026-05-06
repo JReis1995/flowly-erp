@@ -15,8 +15,8 @@ const roboto = Roboto({
 });
 
 export const metadata: Metadata = {
-  title: "Flowly ERP - Sistema de Gestão Integrado",
-  description: "Sistema de gestão ERP completo com módulos integrados para logística, condomínios, finanças e mais.",
+  title: "Flowly - Software personalizado para empresas",
+  description: "A Flowly desenvolve CRMs, aplicações web e soluções operacionais personalizadas para acelerar resultados reais.",
   icons: {
     icon: "/favicon.ico",
   },

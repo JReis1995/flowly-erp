@@ -25,6 +25,12 @@
     background: var(--background);
     font-family: 'Roboto', sans-serif;
   }
+
+  select,
+  select option {
+    color: var(--brand-midnight);
+    background: #ffffff;
+  }
 }
 
 @layer components {

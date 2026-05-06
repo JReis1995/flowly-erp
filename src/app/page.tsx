@@ -1,9 +1,13 @@
-import { createServerClient } from '@supabase/ssr'
+import { CheckCircle2, HelpCircle, Layers, MessageCircle, Phone, Sparkles, Workflow } from 'lucide-react'
+import LeadRequestModal from '@/components/marketing/LeadRequestModal'
 import { cookies } from 'next/headers'
+import { createServerClient } from '@supabase/ssr'
+import { redirect } from 'next/navigation'
 import DashboardLayout from '@/components/DashboardLayout'
-import { Coins, Mail, Phone, ArrowRight, Star, Zap, Shield, TrendingUp } from 'lucide-react'
 
-async function getEmpresas() {
+const SUPERADMIN_EMAILS = ['josereis1995@gmail.com', 'jose.reis@flowly.pt']
+
+async function getLandingContext() {
   const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -17,189 +21,278 @@ async function getEmpresas() {
     }
   )
 
-  try {
-    const { data, error } = await supabase.from('empresas').select('*')
-    if (error) {
-      console.error('Erro ao buscar empresas:', error)
-      return []
-    }
-    return data || []
-  } catch (err) {
-    console.error('Erro:', err)
-    return []
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.user) {
+    return { isAdmin: false }
   }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', session.user.id)
+    .single()
+
+  const role = profile?.role ?? null
+  const isSuperAdminEmail = SUPERADMIN_EMAILS.includes(session.user.email ?? '')
+  const isAdmin = role === 'superadmin' || role === 'developer' || isSuperAdminEmail
+
+  if (!isAdmin) {
+    redirect('/colaboradores')
+  }
+
+  return { isAdmin }
 }
 
 export default async function Home() {
-  const empresas = await getEmpresas()
+  const { isAdmin } = await getLandingContext()
 
-  return (
-    <DashboardLayout>
-      <div className="max-w-7xl mx-auto">
-        {/* Hero Section - Resumo */}
-        <div className="text-center mb-12 py-12">
-          <div className="mb-8">
-            <h1 className="text-5xl font-brand-primary font-bold text-brand-midnight mb-6">
-              Transforme o seu negócio com o
-              <span className="text-brand-primary"> Flowly ERP</span>
+  const landingContent = (
+    <main className="min-h-screen bg-brand-light">
+      <section className="max-w-7xl mx-auto px-6 pt-10 pb-10">
+        <img
+          src="https://i.postimg.cc/mrcDM13S/flowly-logo.jpg"
+          alt="Flowly"
+          className="h-12 w-auto mb-8"
+        />
+
+        <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-white border border-brand-border text-sm text-brand-slate font-brand-secondary">
+          <Sparkles className="w-4 h-4 text-brand-primary" />
+          Software personalizado para equipas ambiciosas
+        </span>
+
+        <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+          <div>
+            <h1 className="text-5xl md:text-6xl font-brand-primary font-bold text-brand-midnight leading-tight">
+              Software e websites personalizados para acelerar vendas e operação.
             </h1>
-            <p className="text-xl text-brand-slate font-brand-secondary max-w-3xl mx-auto leading-relaxed">
-              A plataforma inteligente que revoluciona a gestão empresarial. 
-              Junte-se a mais de 1.000 empresas que já aumentaram a sua produtividade em 73% 
-              e reduziram custos operacionais em 45%.
+            <p className="mt-5 text-lg text-brand-slate font-brand-secondary max-w-2xl">
+              Projetamos, desenvolvemos e evoluimos produtos digitais com foco em impacto real de negócio.
+              Sem soluções genéricas, sem ruído, sem desperdício.
+            </p>
+            {isAdmin ? (
+              <div className="mt-5 flex flex-wrap items-center gap-3">
+                <a
+                  href="/colaboradores"
+                  className="inline-flex items-center gap-2 border border-brand-border bg-brand-white text-brand-midnight px-5 py-2.5 rounded-lg font-brand-secondary"
+                >
+                  Entrar no backoffice
+                </a>
+                <a
+                  href="/central-saas"
+                  className="inline-flex items-center gap-2 border border-brand-border bg-brand-white text-brand-midnight px-5 py-2.5 rounded-lg font-brand-secondary"
+                >
+                  Ir para Central SaaS
+                </a>
+              </div>
+            ) : null}
+            <LeadRequestModal />
+            <p className="mt-3 text-sm text-brand-slate font-brand-secondary">
+              Diagnóstico inicial gratuito. Resposta em até 24h úteis.
             </p>
           </div>
 
-          {/* Stats Virais */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-12">
-            <div className="brand-card p-6 text-center">
-              <div className="text-4xl font-brand-primary font-bold text-brand-primary mb-2">73%</div>
-              <div className="text-brand-slate font-brand-secondary">Aumento de Produtividade</div>
-              <div className="flex justify-center mt-2">
-                <TrendingUp className="w-5 h-5 text-brand-success" />
-              </div>
-            </div>
-            <div className="brand-card p-6 text-center">
-              <div className="text-4xl font-brand-primary font-bold text-brand-success mb-2">45%</div>
-              <div className="text-brand-slate font-brand-secondary">Redução de Custos</div>
-              <div className="flex justify-center mt-2">
-                <Zap className="w-5 h-5 text-brand-primary" />
-              </div>
-            </div>
-            <div className="brand-card p-6 text-center">
-              <div className="text-4xl font-brand-primary font-bold text-brand-midnight mb-2">1000+</div>
-              <div className="text-brand-slate font-brand-secondary">Empresas Satisfeitas</div>
-              <div className="flex justify-center mt-2">
-                <Star className="w-5 h-5 text-brand-warning" />
-              </div>
-            </div>
+          <div className="brand-card p-6">
+            <h2 className="text-xl font-brand-primary font-bold text-brand-midnight mb-4">O que desenvolvemos</h2>
+            <ul className="space-y-3">
+              {[
+                'CRM comercial e operacional adaptado ao teu funil',
+                'Aplicações web para equipas e operações internas',
+                'Websites profissionais orientados a conversão',
+                'Gestão de filas e atendimento com métricas em tempo real',
+                'Automatizações de processos e integração entre sistemas',
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-2 text-brand-slate font-brand-secondary">
+                  <CheckCircle2 className="w-5 h-5 text-brand-success mt-0.5 shrink-0" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
+      </section>
 
-        {/* Upgrade Banner */}
-        <div className="mb-12">
-          <div className="bg-gradient-to-r from-brand-primary to-brand-success rounded-2xl p-8 text-white relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-12 -mb-12"></div>
-            
-            <div className="relative z-10 flex items-center justify-between">
-              <div className="flex-1">
-                <h2 className="text-3xl font-brand-primary font-bold mb-3">
-                  Desbloqueie o Poder Completo do Flowly ERP
-                </h2>
-                <p className="text-lg mb-6 opacity-90 font-brand-secondary">
-                  Actualize para o plano PRO e aceda a todos os módulos, IA avançada, suporte prioritário 
-                  e recursos exclusivos que transformarão o seu negócio.
-                </p>
-                <div className="flex items-center space-x-4">
-                  <button className="bg-white text-brand-primary px-6 py-3 rounded-lg font-brand-primary font-semibold hover:bg-brand-light transition-colors flex items-center">
-                    Fazer Upgrade Agora
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </button>
-                  <span className="text-2xl font-bold">€29/mês</span>
-                </div>
-              </div>
-              
-              <div className="hidden lg:block ml-8">
-                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-6">
-                  <Shield className="w-16 h-16 mb-3" />
-                  <div className="text-sm font-brand-secondary">30 dias</div>
-                  <div className="text-lg font-brand-primary font-bold">Garantia</div>
-                </div>
-              </div>
+      <section className="max-w-7xl mx-auto px-6 py-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          {[
+            'Entrega por milestones',
+            'Arquitetura escalável',
+            'Suporte evolutivo',
+            'Foco em conversão',
+          ].map((trust) => (
+            <div
+              key={trust}
+              className="bg-brand-white border border-brand-border rounded-lg px-4 py-2 text-sm text-brand-midnight font-brand-secondary text-center"
+            >
+              {trust}
             </div>
-          </div>
+          ))}
         </div>
 
-        {/* Modules Preview */}
-        <div className="mb-12">
-          <h2 className="text-3xl font-brand-primary font-bold text-brand-midnight mb-8 text-center">
-            Tudo o que precisa num só lugar
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="brand-card p-5">
+            <Layers className="w-8 h-8 text-brand-primary mb-3" />
+            <h3 className="font-brand-primary font-bold text-brand-midnight">Arquitetura sólida</h3>
+            <p className="text-brand-slate font-brand-secondary mt-1">
+              Soluções pensadas para crescer sem perder performance.
+            </p>
+          </div>
+          <div className="brand-card p-5">
+            <Workflow className="w-8 h-8 text-brand-success mb-3" />
+            <h3 className="font-brand-primary font-bold text-brand-midnight">Processo claro</h3>
+            <p className="text-brand-slate font-brand-secondary mt-1">
+              Briefing, proposta, entrega por milestones e suporte contínuo.
+            </p>
+          </div>
+          <div className="brand-card p-5">
+            <Sparkles className="w-8 h-8 text-brand-warning mb-3" />
+            <h3 className="font-brand-primary font-bold text-brand-midnight">Execução rápida</h3>
+            <p className="text-brand-slate font-brand-secondary mt-1">
+              Priorização orientada ao impacto de negócio e time-to-value.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="max-w-7xl mx-auto px-6 py-6">
+        <h2 className="text-3xl font-brand-primary font-bold text-brand-midnight mb-6">Como trabalhamos</h2>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {[
+            ['01', 'Diagnóstico', 'Mapeamos o contexto, gargalos e oportunidades técnicas.'],
+            ['02', 'Blueprint', 'Definimos arquitetura, escopo e plano de entrega por fases.'],
+            ['03', 'Execução', 'Implementação com checkpoints curtos e validação contínua.'],
+            ['04', 'Evolução', 'Melhorias orientadas por dados e objetivos de negócio.'],
+          ].map(([step, title, desc]) => (
+            <div key={step} className="brand-card p-5">
+              <p className="text-xs font-brand-primary font-bold text-brand-primary">{step}</p>
+              <h3 className="mt-2 text-lg font-brand-primary font-bold text-brand-midnight">{title}</h3>
+              <p className="mt-2 text-sm text-brand-slate font-brand-secondary">{desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="max-w-7xl mx-auto px-6 py-14">
+        <div className="bg-gradient-to-r from-brand-midnight to-[#0f172a] rounded-2xl p-8 md:p-10 text-white">
+          <p className="text-sm uppercase tracking-wide text-white/70 font-brand-secondary">Flowly Studio</p>
+          <h2 className="mt-2 text-3xl md:text-4xl font-brand-primary font-bold max-w-3xl">
+            Da ideia ao produto digital com estrategia, design e engenharia no mesmo fluxo.
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="brand-card p-6 hover:shadow-lg transition-shadow">
-              <div className="w-12 h-12 bg-brand-primary rounded-lg flex items-center justify-center mb-4">
-                <Coins className="w-6 h-6 text-white" />
+          <p className="mt-3 text-white/80 font-brand-secondary max-w-2xl">
+            Desenvolvemos software e websites focados em crescimento, operacao e experiencia do cliente.
+          </p>
+          <div className="mt-6">
+            <LeadRequestModal />
+          </div>
+        </div>
+      </section>
+
+      <section className="max-w-7xl mx-auto px-6 py-6">
+        <h2 className="text-3xl font-brand-primary font-bold text-brand-midnight mb-6">Perguntas frequentes</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="brand-card p-5">
+            <h3 className="font-brand-primary font-semibold text-brand-midnight">Fazem só software ou também websites?</h3>
+            <p className="mt-2 text-sm text-brand-slate font-brand-secondary">
+              Fazemos os dois. Desenvolvemos websites orientados a conversão e software interno sob medida.
+            </p>
+          </div>
+          <div className="brand-card p-5">
+            <h3 className="font-brand-primary font-semibold text-brand-midnight">Quanto tempo demora um projeto?</h3>
+            <p className="mt-2 text-sm text-brand-slate font-brand-secondary">
+              O prazo é definido por nós após diagnóstico técnico para garantir compromisso realista de entrega.
+            </p>
+          </div>
+          <div className="brand-card p-5">
+            <h3 className="font-brand-primary font-semibold text-brand-midnight">Podem integrar com sistemas existentes?</h3>
+            <p className="mt-2 text-sm text-brand-slate font-brand-secondary">
+              Sim. Integramos com ERP, faturação, e-commerce, email, WhatsApp e outras APIs.
+            </p>
+          </div>
+          <div className="brand-card p-5">
+            <h3 className="font-brand-primary font-semibold text-brand-midnight">Há manutenção após entrega?</h3>
+            <p className="mt-2 text-sm text-brand-slate font-brand-secondary">
+              Sim, com opção de suporte pontual ou avença mensal de evolução contínua.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="max-w-7xl mx-auto px-6 pb-10">
+        <div className="bg-gradient-to-r from-[#0b1220] to-[#0f172a] rounded-2xl border border-white/10 p-8 md:p-10 text-white">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-white/60 font-brand-secondary">
+                Contactos e Credenciais
+              </p>
+              <h3 className="mt-2 text-3xl font-brand-primary font-bold">
+                Suporte premium para decisões técnicas críticas.
+              </h3>
+              <p className="mt-3 text-white/75 font-brand-secondary max-w-xl">
+                Acompanhamos cada projeto com padrões de qualidade, segurança e governança operacional desde o primeiro diagnóstico.
+              </p>
+
+              <div className="mt-6 flex flex-wrap gap-2">
+                {[
+                  'Processo auditável por milestones',
+                  'Arquitetura e segurança by design',
+                  'SLA de resposta acordado por projeto',
+                ].map((badge) => (
+                  <span
+                    key={badge}
+                    className="px-3 py-1.5 rounded-full text-xs font-brand-secondary bg-white/10 border border-white/15 text-white/90"
+                  >
+                    {badge}
+                  </span>
+                ))}
               </div>
-              <h3 className="text-xl font-brand-primary font-bold text-brand-midnight mb-2">Gestão Financeira</h3>
-              <p className="text-brand-slate font-brand-secondary">Controlo total das suas finanças com relatórios em tempo real</p>
             </div>
-            
-            <div className="brand-card p-6 hover:shadow-lg transition-shadow">
-              <div className="w-12 h-12 bg-brand-success rounded-lg flex items-center justify-center mb-4">
-                <Zap className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-xl font-brand-primary font-bold text-brand-midnight mb-2">IA Insights</h3>
-              <p className="text-brand-slate font-brand-secondary">Análise inteligente para decisões estratégicas</p>
-            </div>
-            
-            <div className="brand-card p-6 hover:shadow-lg transition-shadow">
-              <div className="w-12 h-12 bg-brand-midnight rounded-lg flex items-center justify-center mb-4">
-                <Shield className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-xl font-brand-primary font-bold text-brand-midnight mb-2">Segurança Máxima</h3>
-              <p className="text-brand-slate font-brand-secondary">Dados protegidos com encriptação de nível bancário</p>
+
+            <div className="grid grid-cols-1 gap-4">
+              <a href="mailto:geral@flowly.pt" className="bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-500/15 rounded-lg">
+                    <MessageCircle className="h-5 w-5 text-blue-300" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-white/70 font-brand-secondary">Geral</p>
+                    <p className="font-brand-primary font-semibold">geral@flowly.pt</p>
+                  </div>
+                </div>
+              </a>
+
+              <a href="mailto:comercial@flowly.pt" className="bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-green-500/15 rounded-lg">
+                    <HelpCircle className="h-5 w-5 text-green-300" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-white/70 font-brand-secondary">Comercial</p>
+                    <p className="font-brand-primary font-semibold">comercial@flowly.pt</p>
+                  </div>
+                </div>
+              </a>
+
+              <a href="tel:+351927140717" className="bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-purple-500/15 rounded-lg">
+                    <Phone className="h-5 w-5 text-purple-300" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-white/70 font-brand-secondary">Telefone</p>
+                    <p className="font-brand-primary font-semibold">927 140 717</p>
+                  </div>
+                </div>
+              </a>
             </div>
           </div>
         </div>
+      </section>
 
-        {/* Footer Contact */}
-        <footer className="border-t border-brand-border pt-12 pb-8">
-          <div className="text-center mb-8">
-            <h3 className="text-2xl font-brand-primary font-bold text-brand-midnight mb-4">
-              Estamos aqui para ajudar
-            </h3>
-            <p className="text-brand-slate font-brand-secondary mb-8">
-              A nossa equipa de especialistas está disponível para suportar o seu crescimento
-            </p>
-            
-            <div className="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-8">
-              <a 
-                href="mailto:geral@flowly.pt" 
-                className="flex items-center space-x-3 text-brand-primary hover:text-brand-midnight transition-colors group"
-              >
-                <div className="w-12 h-12 bg-brand-primary rounded-lg flex items-center justify-center group-hover:bg-brand-midnight transition-colors">
-                  <Mail className="w-6 h-6 text-white" />
-                </div>
-                <div className="text-left">
-                  <div className="font-brand-primary font-semibold text-brand-midnight">geral@flowly.pt</div>
-                  <div className="text-sm text-brand-slate font-brand-secondary">Suporte Geral</div>
-                </div>
-              </a>
-              
-              <a 
-                href="mailto:comercial@flowly.pt" 
-                className="flex items-center space-x-3 text-brand-success hover:text-brand-midnight transition-colors group"
-              >
-                <div className="w-12 h-12 bg-brand-success rounded-lg flex items-center justify-center group-hover:bg-brand-midnight transition-colors">
-                  <Mail className="w-6 h-6 text-white" />
-                </div>
-                <div className="text-left">
-                  <div className="font-brand-primary font-semibold text-brand-midnight">comercial@flowly.pt</div>
-                  <div className="text-sm text-brand-slate font-brand-secondary">Equipas Comerciais</div>
-                </div>
-              </a>
-              
-              <a 
-                href="tel:+351927140717" 
-                className="flex items-center space-x-3 text-brand-warning hover:text-brand-midnight transition-colors group"
-              >
-                <div className="w-12 h-12 bg-brand-warning rounded-lg flex items-center justify-center group-hover:bg-brand-midnight transition-colors">
-                  <Phone className="w-6 h-6 text-white" />
-                </div>
-                <div className="text-left">
-                  <div className="font-brand-primary font-semibold text-brand-midnight">927 140 717</div>
-                  <div className="text-sm text-brand-slate font-brand-secondary">Chamada Urgente</div>
-                </div>
-              </a>
-            </div>
-          </div>
-          
-          <div className="text-center text-brand-slate font-brand-secondary text-sm">
-            <p>© 2024 Flowly ERP. Todos os direitos reservados. | Feito com ❤️ em Portugal</p>
-          </div>
-        </footer>
-      </div>
-    </DashboardLayout>
+    </main>
   )
+
+  if (isAdmin) {
+    return <DashboardLayout>{landingContent}</DashboardLayout>
+  }
+
+  return landingContent
 }

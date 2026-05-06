@@ -113,6 +113,13 @@ export default function ColaboradoresEscalasPage() {
         </div>
       )}
 
+      {!companyId && ctxLoading && (
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-brand-border bg-brand-light/40 px-3 py-2 text-sm text-brand-slate font-brand-secondary">
+          <Loader2 className="h-4 w-4 shrink-0 animate-spin text-brand-primary" />
+          A determinar a empresa associada à sua conta…
+        </div>
+      )}
+
       {!companyId && !ctxLoading && (
         <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 font-brand-secondary">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />

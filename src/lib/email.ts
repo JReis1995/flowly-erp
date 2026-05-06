@@ -1,7 +1,9 @@
 import { Resend } from "resend";
 
-const FROM_GENERAL = "geral@flowly.pt";
-const FROM_COMERCIAL = "geral@flowly.pt";
+const FROM_GENERAL = process.env.EMAIL_FROM_GENERAL || "onboarding@resend.dev";
+const FROM_COMERCIAL = process.env.EMAIL_FROM_COMERCIAL || FROM_GENERAL;
+const REPLY_TO_GENERAL = process.env.EMAIL_REPLY_TO_GENERAL || "geral@flowly.pt";
+const REPLY_TO_COMERCIAL = process.env.EMAIL_REPLY_TO_COMERCIAL || "comercial@flowly.pt";
 const CURRENT_YEAR = new Date().getFullYear();
 const LOGO_URL = "https://flowly.pt/flowly-logo.jpg";
 
@@ -166,6 +168,26 @@ export interface PurchaseThankYouEmailData {
   valor: number;
 }
 
+export interface LeadRequestReceivedEmailData {
+  to: string;
+  nome: string;
+  tipoProjeto: string;
+}
+
+export interface LeadInternalNotificationEmailData {
+  to: string;
+  nome: string;
+  email: string;
+  empresa?: string | null;
+  tipoProjeto: string;
+  objetivoPrincipal?: string | null;
+  utilizadores?: string | null;
+  integracoes?: string | null;
+  orcamento?: string | null;
+  modalidadeManutencao?: string | null;
+  descricao?: string | null;
+}
+
 /**
  * Enviar email de boas-vindas para novo cliente
  */
@@ -257,6 +279,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<{ succes
     const result = await getResend().emails.send({
       from: `Flowly <${FROM_GENERAL}>`,
       to,
+      replyTo: REPLY_TO_GENERAL,
       subject: "Bem-vindo ao Flowly ERP! 🎉",
       html,
     });
@@ -375,6 +398,7 @@ export async function sendPurchaseThankYouEmail(data: PurchaseThankYouEmailData)
     const result = await getResend().emails.send({
       from: `Flowly Comercial <${FROM_COMERCIAL}>`,
       to,
+      replyTo: REPLY_TO_COMERCIAL,
       subject: "Obrigado pela sua compra de Créditos IA! ✨",
       html,
     });
@@ -383,6 +407,193 @@ export async function sendPurchaseThankYouEmail(data: PurchaseThankYouEmailData)
       return { success: false, error: result.error.message };
     }
 
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Enviar email de confirmação de receção de pedido comercial
+ */
+export async function sendLeadRequestReceivedEmail(
+  data: LeadRequestReceivedEmailData
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { to, nome, tipoProjeto } = data;
+
+    const html = `
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recebemos o seu pedido - Flowly</title>
+</head>
+<body style="${STYLES.body}">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #F8FAFC;">
+    <tr>
+      <td align="center" style="padding: 20px 0;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="${STYLES.container}">
+          <tr>
+            <td style="${STYLES.header}">
+              <a href="https://flowly.pt" target="_blank" style="text-decoration: none;">
+                <img src="${getEmailLogoUrl()}" alt="Flowly Logo" width="150" style="display: block; margin: 0 auto; border: none; max-width: 100%; height: auto;" />
+              </a>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="${STYLES.content}">
+              <h1 style="${STYLES.heading1}">Recebemos o seu pedido com sucesso</h1>
+
+              <p style="${STYLES.text}">Olá ${nome},</p>
+
+              <p style="${STYLES.text}">
+                Obrigado pelo seu contacto. A sua solicitação para <strong style="${STYLES.strong}">${tipoProjeto}</strong> foi registada na nossa equipa.
+              </p>
+
+              <div style="${STYLES.infoBox}">
+                <h3 style="${STYLES.heading3}">O que acontece agora:</h3>
+                <ul style="${STYLES.list}">
+                  <li>Vamos analisar o seu contexto e requisitos</li>
+                  <li>Receberá resposta em até 2 dias úteis</li>
+                  <li>Enviaremos os próximos passos e proposta inicial</li>
+                </ul>
+              </div>
+
+              <p style="${STYLES.text}">
+                Se precisar de acrescentar alguma informação, pode responder a este email.
+              </p>
+
+              <p style="${STYLES.text}">
+                Obrigado,<br/>
+                <strong style="${STYLES.strong}">Equipa Flowly</strong>
+              </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="${STYLES.footer}">
+              <p style="${STYLES.footerText}">Flowly - Software e Websites Personalizados</p>
+              <p style="${STYLES.footerText}">
+                © ${CURRENT_YEAR} Flowly. Todos os direitos reservados.<br/>
+                <a href="mailto:${FROM_COMERCIAL}" style="${STYLES.link}">${FROM_COMERCIAL}</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+    const result = await getResend().emails.send({
+      from: `Flowly Comercial <${FROM_COMERCIAL}>`,
+      to,
+      replyTo: REPLY_TO_COMERCIAL,
+      subject: 'Recebemos o seu pedido - resposta em até 2 dias úteis',
+      html,
+    });
+
+    if (result.error) {
+      return { success: false, error: result.error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Enviar notificação interna quando entra uma nova lead
+ */
+export async function sendLeadInternalNotificationEmail(
+  data: LeadInternalNotificationEmailData
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const {
+      to,
+      nome,
+      email,
+      empresa,
+      tipoProjeto,
+      objetivoPrincipal,
+      utilizadores,
+      integracoes,
+      orcamento,
+      modalidadeManutencao,
+      descricao,
+    } = data;
+
+    const html = `
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nova lead recebida - Flowly</title>
+</head>
+<body style="${STYLES.body}">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #F8FAFC;">
+    <tr>
+      <td align="center" style="padding: 20px 0;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="${STYLES.container}">
+          <tr>
+            <td style="${STYLES.header}">
+              <a href="https://flowly.pt" target="_blank" style="text-decoration: none;">
+                <img src="${getEmailLogoUrl()}" alt="Flowly Logo" width="150" style="display: block; margin: 0 auto; border: none; max-width: 100%; height: auto;" />
+              </a>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="${STYLES.content}">
+              <h1 style="${STYLES.heading1}">Nova lead recebida no site</h1>
+              <div style="${STYLES.infoBox}">
+                <p style="${STYLES.text}"><strong style="${STYLES.strong}">Nome:</strong> ${nome}</p>
+                <p style="${STYLES.text}"><strong style="${STYLES.strong}">Email:</strong> ${email}</p>
+                <p style="${STYLES.text}"><strong style="${STYLES.strong}">Empresa:</strong> ${empresa || 'Não indicado'}</p>
+                <p style="${STYLES.text}"><strong style="${STYLES.strong}">Tipo de projeto:</strong> ${tipoProjeto}</p>
+                <p style="${STYLES.text}"><strong style="${STYLES.strong}">Objetivo principal:</strong> ${objetivoPrincipal || 'Não indicado'}</p>
+                <p style="${STYLES.text}"><strong style="${STYLES.strong}">Utilizadores:</strong> ${utilizadores || 'Não indicado'}</p>
+                <p style="${STYLES.text}"><strong style="${STYLES.strong}">Integrações:</strong> ${integracoes || 'Não indicado'}</p>
+                <p style="${STYLES.text}"><strong style="${STYLES.strong}">Orçamento:</strong> ${orcamento || 'Não indicado'}</p>
+                <p style="${STYLES.text}"><strong style="${STYLES.strong}">Manutenção:</strong> ${modalidadeManutencao || 'Não indicado'}</p>
+                <p style="${STYLES.text}"><strong style="${STYLES.strong}">Contexto:</strong> ${descricao || 'Sem contexto adicional.'}</p>
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="${STYLES.footer}">
+              <p style="${STYLES.footerText}">Flowly - Notificação interna de leads</p>
+              <p style="${STYLES.footerText}">
+                © ${CURRENT_YEAR} Flowly. Todos os direitos reservados.<br/>
+                <a href="mailto:${FROM_COMERCIAL}" style="${STYLES.link}">${FROM_COMERCIAL}</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+    const result = await getResend().emails.send({
+      from: `Flowly Leads <${FROM_COMERCIAL}>`,
+      to,
+      replyTo: REPLY_TO_COMERCIAL,
+      subject: `Nova lead: ${tipoProjeto} - ${nome}`,
+      html,
+    });
+
+    if (result.error) {
+      return { success: false, error: result.error.message };
+    }
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };

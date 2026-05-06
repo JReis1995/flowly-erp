@@ -112,14 +112,22 @@ export default function ColaboradoresGestaoPage() {
         </div>
       )}
 
+      {!companyId && ctxLoading && (
+        <div className="brand-card flex items-center gap-2 p-6 text-sm text-brand-slate font-brand-secondary">
+          <Loader2 className="h-5 w-5 shrink-0 animate-spin text-brand-primary" />
+          A determinar a empresa associada à sua conta…
+        </div>
+      )}
+
       {!companyId && !ctxLoading && (
         <div className="brand-card flex items-start gap-2 p-6 text-sm text-brand-slate font-brand-secondary">
           <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-brand-primary" />
           <div>
             <p className="font-medium text-brand-midnight">Sem empresa definida</p>
             <p className="mt-1">
-              Associe um tenant ao seu perfil, use a <strong>visão de cliente</strong> ou selecione uma empresa
-              acima.
+              Confirme que o email com que iniciou sessão coincide com <strong>gestor_email</strong> do tenant, que
+              está em <strong>tenant_users</strong> como admin/gestor, ou associe <strong>tenant_id</strong> ao seu
+              perfil / use a <strong>visão de cliente</strong> / selecione uma empresa acima.
             </p>
           </div>
         </div>

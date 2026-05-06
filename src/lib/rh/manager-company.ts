@@ -9,6 +9,13 @@ export function isPlatformRhRole(role: string | null | undefined): boolean {
   return role === 'superadmin' || role === 'developer'
 }
 
+/** Valores para corresponder `tenants.gestor_email` (PostgreSQL `=` é sensível a maiúsculas). */
+export function gestorEmailLookupValues(email: string | undefined): string[] {
+  const t = typeof email === 'string' ? email.trim() : ''
+  if (!t) return []
+  return Array.from(new Set([t, t.toLowerCase(), t.toUpperCase()]))
+}
+
 /** Resolve o tenant/empresa onde o utilizador atua como gestor (não inclui bypass de plataforma). */
 export async function resolveManagerCompanyId(
   supabase: SupabaseClient,
@@ -19,11 +26,13 @@ export async function resolveManagerCompanyId(
   if (profile?.role === 'gestor' && profile.tenant_id) {
     return profile.tenant_id
   }
-  if (email) {
+  const variants = gestorEmailLookupValues(email)
+  if (variants.length > 0) {
     const { data: t } = await supabase
       .from('tenants')
       .select('id')
-      .eq('gestor_email', email)
+      .in('gestor_email', variants)
+      .limit(1)
       .maybeSingle()
     if (t?.id) return t.id
   }
@@ -51,12 +60,13 @@ export async function userManagesCompany(
   if (profile?.role === 'gestor' && profile.tenant_id === companyId) {
     return true
   }
-  if (email) {
+  const variants = gestorEmailLookupValues(email)
+  if (variants.length > 0) {
     const { data: tenant } = await supabase
       .from('tenants')
       .select('id')
       .eq('id', companyId)
-      .eq('gestor_email', email)
+      .in('gestor_email', variants)
       .maybeSingle()
     if (tenant?.id) return true
   }

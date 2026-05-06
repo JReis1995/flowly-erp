@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createBrowserClient } from '@/utils/supabase-browser'
 import { useImpersonate } from '@/stores/impersonateStore'
+import { gestorEmailLookupValues } from '@/lib/rh/manager-company'
 
 /**
  * Resolve o tenant/empresa efetivo para ecrãs de RH (gestor, impersonate ou plataforma com tenant escolhido).
@@ -15,6 +16,8 @@ export function useRhCompanyId(selectedPlatformTenant: string = '') {
   const [profileTenantId, setProfileTenantId] = useState<string | null>(null)
   /** superadmin/developer sem tenant_id no perfil: empresa via gestor_email ou tenant_users (igual à API de criar colaborador). */
   const [platformFallbackTenantId, setPlatformFallbackTenantId] = useState<string | null>(null)
+  /** idle = não aplicável; pending = a resolver; done = tentativa concluída (com ou sem tenant). */
+  const [platformFallbackStatus, setPlatformFallbackStatus] = useState<'idle' | 'pending' | 'done'>('idle')
   const [loading, setLoading] = useState(true)
 
   const refreshProfile = useCallback(async () => {
@@ -49,12 +52,15 @@ export function useRhCompanyId(selectedPlatformTenant: string = '') {
   useEffect(() => {
     if (!supabase || !isPlatform || impersonateActive || profileTenantId) {
       setPlatformFallbackTenantId(null)
+      setPlatformFallbackStatus('idle')
       return
     }
     if (selectedPlatformTenant.trim()) {
       setPlatformFallbackTenantId(null)
+      setPlatformFallbackStatus('idle')
       return
     }
+    setPlatformFallbackStatus('pending')
     let cancelled = false
     ;(async () => {
       const {
@@ -62,28 +68,39 @@ export function useRhCompanyId(selectedPlatformTenant: string = '') {
       } = await supabase.auth.getSession()
       const user = session?.user
       const email = user?.email?.trim()
-      if (!user || !email || cancelled) {
-        if (!cancelled) setPlatformFallbackTenantId(null)
+      if (!user || !email) {
+        if (!cancelled) {
+          setPlatformFallbackTenantId(null)
+          setPlatformFallbackStatus('done')
+        }
         return
       }
-      const { data: byGestor } = await supabase
-        .from('tenants')
-        .select('id')
-        .eq('gestor_email', email)
-        .maybeSingle()
-      if (cancelled) return
-      if (byGestor?.id) {
-        setPlatformFallbackTenantId(byGestor.id)
-        return
+      const variants = gestorEmailLookupValues(email)
+      let foundId: string | null = null
+      if (variants.length > 0) {
+        const { data: byGestor } = await supabase
+          .from('tenants')
+          .select('id')
+          .in('gestor_email', variants)
+          .limit(1)
+          .maybeSingle()
+        if (cancelled) return
+        if (byGestor?.id) foundId = byGestor.id
       }
-      const { data: tu } = await supabase
-        .from('tenant_users')
-        .select('tenant_id')
-        .eq('user_id', user.id)
-        .in('role', ['admin', 'gestor'])
-        .limit(1)
-        .maybeSingle()
-      if (!cancelled) setPlatformFallbackTenantId(tu?.tenant_id ?? null)
+      if (!foundId) {
+        const { data: tu } = await supabase
+          .from('tenant_users')
+          .select('tenant_id')
+          .eq('user_id', user.id)
+          .in('role', ['admin', 'gestor'])
+          .limit(1)
+          .maybeSingle()
+        if (!cancelled && tu?.tenant_id) foundId = tu.tenant_id
+      }
+      if (!cancelled) {
+        setPlatformFallbackTenantId(foundId)
+        setPlatformFallbackStatus('done')
+      }
     })()
     return () => {
       cancelled = true
@@ -106,13 +123,25 @@ export function useRhCompanyId(selectedPlatformTenant: string = '') {
     selectedPlatformTenant,
   ])
 
+  const needsPlatformFallback =
+    Boolean(supabase) &&
+    isPlatform &&
+    !impersonateActive &&
+    !profileTenantId &&
+    !selectedPlatformTenant.trim()
+
+  const loadingContext =
+    loading || (needsPlatformFallback && platformFallbackStatus !== 'done')
+
   return {
     supabase,
     companyId,
     isPlatform,
     profileTenantId,
     impersonateActive,
-    loading,
+    /** Inclui a resolução da empresa para superadmin/developer sem tenant_id no perfil (evita “Sem empresa” antes do fallback). */
+    loading: loadingContext,
+    profileLoading: loading,
     refreshProfile,
   }
 }
