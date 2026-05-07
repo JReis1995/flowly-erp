@@ -8,6 +8,7 @@ import {
   CreditCard,
   Brain,
   Briefcase,
+  Workflow,
   LogOut,
   ChevronLeft,
   ChevronRight,
@@ -37,6 +38,11 @@ const menuItems = [
     label: "Pacotes IA",
     href: "/central-saas/pacotes-ia",
     icon: Brain,
+  },
+  {
+    label: "Leads CRM",
+    href: "/central-saas/leads",
+    icon: Workflow,
   },
   {
     label: "Equipa",

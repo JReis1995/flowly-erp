@@ -6,10 +6,10 @@ import {
   TrendingDown,
   Brain,
   Briefcase,
+  Workflow,
   ArrowUpRight,
   Euro,
   ArrowLeft,
-  Home,
 } from "lucide-react";
 
 export default async function AdminDashboardPage() {
@@ -218,6 +218,13 @@ export default async function AdminDashboardPage() {
           >
             <CreditCard className="w-4 h-4" />
             Configurar Planos
+          </a>
+          <a
+            href="/central-saas/leads"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-brand-midnight text-white rounded-lg font-brand-secondary font-medium hover:bg-brand-midnight/90 transition-colors"
+          >
+            <Workflow className="w-4 h-4" />
+            CRM Leads
           </a>
           <a
             href="/central-saas/pacotes-ia"

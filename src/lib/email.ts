@@ -4,6 +4,11 @@ const FROM_GENERAL = process.env.EMAIL_FROM_GENERAL || "onboarding@resend.dev";
 const FROM_COMERCIAL = process.env.EMAIL_FROM_COMERCIAL || FROM_GENERAL;
 const REPLY_TO_GENERAL = process.env.EMAIL_REPLY_TO_GENERAL || "geral@flowly.pt";
 const REPLY_TO_COMERCIAL = process.env.EMAIL_REPLY_TO_COMERCIAL || "comercial@flowly.pt";
+const SIGNATURE_PHONE = process.env.EMAIL_SIGNATURE_PHONE || "+351 927140717";
+const SIGNATURE_EMAIL = process.env.EMAIL_SIGNATURE_EMAIL || "comercial@flowly.pt";
+const SIGNATURE_WEBSITE = process.env.EMAIL_SIGNATURE_WEBSITE || "www.flowly.pt";
+const SIGNATURE_LOGO_URL =
+  process.env.EMAIL_SIGNATURE_LOGO_URL || process.env.EMAIL_LOGO_URL || "https://flowly.pt/flowly-logo.jpg";
 const CURRENT_YEAR = new Date().getFullYear();
 const LOGO_URL = "https://flowly.pt/flowly-logo.jpg";
 
@@ -200,6 +205,14 @@ export interface LeadInternalNotificationEmailData {
   orcamento?: string | null;
   modalidadeManutencao?: string | null;
   descricao?: string | null;
+}
+
+export interface LeadFollowUpEmailData {
+  to: string;
+  nome: string;
+  subject: string;
+  message: string;
+  replyTo?: string | null;
 }
 
 /**
@@ -621,6 +634,100 @@ export async function sendLeadInternalNotificationEmail(
       subject: `Nova lead: ${assuntoTipo} - ${nome}`,
       html,
       tags: [{ name: "workflow", value: "lead_internal" }],
+    });
+
+    if (result.error) {
+      return { success: false, error: result.error.message };
+    }
+    return { success: true, messageId: result.data?.id };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Enviar email comercial manual para uma lead a partir do CRM interno.
+ */
+export async function sendLeadFollowUpEmail(
+  data: LeadFollowUpEmailData
+): Promise<{ success: boolean; error?: string; messageId?: string }> {
+  try {
+    const to = data.to.trim().toLowerCase();
+    const subject = data.subject.trim();
+    const message = data.message.trim();
+    const replyTo = data.replyTo?.trim() || REPLY_TO_COMERCIAL;
+
+    if (!to || !subject || message.length < 3) {
+      return { success: false, error: "Dados de email inválidos." };
+    }
+
+    const safeMessage = escapeHtml(message).replace(/\n/g, "<br/>");
+
+    const html = `
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(subject)}</title>
+</head>
+<body style="${STYLES.body}">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #F8FAFC;">
+    <tr>
+      <td align="center" style="padding: 20px 0;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="${STYLES.container}">
+          <tr>
+            <td style="${STYLES.header}">
+              <a href="https://flowly.pt" target="_blank" style="text-decoration: none;">
+                <img src="${getEmailLogoUrl()}" alt="Flowly Logo" width="150" style="display: block; margin: 0 auto; border: none; max-width: 100%; height: auto;" />
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <td style="${STYLES.content}">
+              <h1 style="${STYLES.heading2}">${escapeHtml(subject)}</h1>
+              <p style="${STYLES.text}">${safeMessage}</p>
+
+              <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid #E2E8F0;">
+                <p style="${STYLES.text}; margin-bottom: 8px;">
+                  Atenciosamente,<br/>
+                  <strong style="${STYLES.strong}">Equipa Flowly</strong>
+                </p>
+                <p style="${STYLES.text}; margin: 0 0 4px 0;">📞 ${escapeHtml(SIGNATURE_PHONE)}</p>
+                <p style="${STYLES.text}; margin: 0 0 4px 0;">✉️ ${escapeHtml(SIGNATURE_EMAIL)}</p>
+                <p style="${STYLES.text}; margin: 0 0 14px 0;">🌐 ${escapeHtml(SIGNATURE_WEBSITE)}</p>
+                <img
+                  src="${escapeHtml(SIGNATURE_LOGO_URL)}"
+                  alt="Flowly"
+                  width="220"
+                  style="display:block; max-width: 220px; width: 100%; height: auto; border: none;"
+                />
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="${STYLES.footer}">
+              <p style="${STYLES.footerText}">Flowly - Software e Websites Personalizados</p>
+              <p style="${STYLES.footerText}">
+                © ${CURRENT_YEAR} Flowly. Todos os direitos reservados.<br/>
+                <a href="mailto:${FROM_COMERCIAL}" style="${STYLES.link}">${FROM_COMERCIAL}</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+    const result = await getResend().emails.send({
+      from: `Flowly Comercial <${FROM_COMERCIAL}>`,
+      to,
+      replyTo,
+      subject,
+      html,
+      tags: [{ name: "workflow", value: "lead_follow_up" }],
     });
 
     if (result.error) {
