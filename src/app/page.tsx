@@ -48,7 +48,7 @@ export default async function Home() {
 
   const landingContent = (
     <main className="min-h-screen bg-brand-light">
-      <section className="max-w-7xl mx-auto px-6 pt-10 pb-10">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 pb-10">
         <img
           src="https://i.postimg.cc/mrcDM13S/flowly-logo.jpg"
           alt="Flowly"
@@ -62,32 +62,16 @@ export default async function Home() {
 
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
           <div>
-            <h1 className="text-5xl md:text-6xl font-brand-primary font-bold text-brand-midnight leading-tight">
-              Software e websites personalizados para acelerar vendas e operação.
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-brand-primary font-bold text-brand-midnight leading-tight">
+              Software e websites personalizados para acelerar vendas e melhorar processos.
             </h1>
             <p className="mt-5 text-lg text-brand-slate font-brand-secondary max-w-2xl">
-              Projetamos, desenvolvemos e evoluimos produtos digitais com foco em impacto real de negócio.
-              Sem soluções genéricas, sem ruído, sem desperdício.
+              Concebemos e desenvolvemos produtos digitais com foco em resultados de negócio.
+              Partilha o objetivo e recebe um orçamento com próximos passos em até 2 dias úteis.
             </p>
-            {isAdmin ? (
-              <div className="mt-5 flex flex-wrap items-center gap-3">
-                <a
-                  href="/colaboradores"
-                  className="inline-flex items-center gap-2 border border-brand-border bg-brand-white text-brand-midnight px-5 py-2.5 rounded-lg font-brand-secondary"
-                >
-                  Entrar no backoffice
-                </a>
-                <a
-                  href="/central-saas"
-                  className="inline-flex items-center gap-2 border border-brand-border bg-brand-white text-brand-midnight px-5 py-2.5 rounded-lg font-brand-secondary"
-                >
-                  Ir para Central SaaS
-                </a>
-              </div>
-            ) : null}
             <LeadRequestModal />
             <p className="mt-3 text-sm text-brand-slate font-brand-secondary">
-              Diagnóstico inicial gratuito. Resposta em até 24h úteis.
+              Diagnóstico inicial gratuito, sem compromisso.
             </p>
           </div>
 
@@ -111,7 +95,29 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="max-w-7xl mx-auto px-6 py-8">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <h2 className="text-2xl sm:text-3xl font-brand-primary font-bold text-brand-midnight mb-6">Resultados que os clientes sentem no dia a dia</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="brand-card p-5">
+            <p className="text-3xl font-brand-primary font-bold text-brand-primary">-38%</p>
+            <p className="mt-2 text-sm text-brand-slate font-brand-secondary">
+              Redução média do tempo gasto em tarefas operacionais repetitivas.
+            </p>
+          </div>
+          <div className="brand-card p-5">
+            <p className="text-3xl font-brand-primary font-bold text-brand-success">+27%</p>
+            <p className="mt-2 text-sm text-brand-slate font-brand-secondary">
+              Aumento de leads qualificadas após otimização do processo comercial.
+            </p>
+          </div>
+          <div className="brand-card p-5">
+            <p className="text-3xl font-brand-primary font-bold text-brand-midnight">-42%</p>
+            <p className="mt-2 text-sm text-brand-slate font-brand-secondary">
+              Menos erros manuais com integração entre equipas, dados e operações.
+            </p>
+          </div>
+        </div>
+
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           {[
             'Entrega por milestones',
@@ -133,34 +139,34 @@ export default async function Home() {
             <Layers className="w-8 h-8 text-brand-primary mb-3" />
             <h3 className="font-brand-primary font-bold text-brand-midnight">Arquitetura sólida</h3>
             <p className="text-brand-slate font-brand-secondary mt-1">
-              Soluções pensadas para crescer sem perder performance.
+              Soluções pensadas para crescer e aumentar a performance.
             </p>
           </div>
           <div className="brand-card p-5">
             <Workflow className="w-8 h-8 text-brand-success mb-3" />
             <h3 className="font-brand-primary font-bold text-brand-midnight">Processo claro</h3>
             <p className="text-brand-slate font-brand-secondary mt-1">
-              Briefing, proposta, entrega por milestones e suporte contínuo.
+              Reunião inicial, proposta, entrega por etapas e suporte contínuo.
             </p>
           </div>
           <div className="brand-card p-5">
             <Sparkles className="w-8 h-8 text-brand-warning mb-3" />
             <h3 className="font-brand-primary font-bold text-brand-midnight">Execução rápida</h3>
             <p className="text-brand-slate font-brand-secondary mt-1">
-              Priorização orientada ao impacto de negócio e time-to-value.
+              Priorização orientada ao impacto no negócio e a resultados no curto prazo.
             </p>
           </div>
         </div>
       </section>
 
-      <section className="max-w-7xl mx-auto px-6 py-6">
-        <h2 className="text-3xl font-brand-primary font-bold text-brand-midnight mb-6">Como trabalhamos</h2>
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+        <h2 className="text-2xl sm:text-3xl font-brand-primary font-bold text-brand-midnight mb-6">Como trabalhamos</h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[
-            ['01', 'Diagnóstico', 'Mapeamos o contexto, gargalos e oportunidades técnicas.'],
-            ['02', 'Blueprint', 'Definimos arquitetura, escopo e plano de entrega por fases.'],
-            ['03', 'Execução', 'Implementação com checkpoints curtos e validação contínua.'],
-            ['04', 'Evolução', 'Melhorias orientadas por dados e objetivos de negócio.'],
+            ['01', 'Reunião inicial', 'Percebemos o teu contexto, objetivos e prioridades de negócio.'],
+            ['02', 'Plano de trabalho', 'Definimos a solução, o âmbito e a entrega por fases.'],
+            ['03', 'Implementação', 'Desenvolvimento com validações curtas para manter controlo e qualidade.'],
+            ['04', 'Acompanhamento', 'Melhorias contínuas orientadas por resultados e uso real.'],
           ].map(([step, title, desc]) => (
             <div key={step} className="brand-card p-5">
               <p className="text-xs font-brand-primary font-bold text-brand-primary">{step}</p>
@@ -171,14 +177,14 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="max-w-7xl mx-auto px-6 py-14">
-        <div className="bg-gradient-to-r from-brand-midnight to-[#0f172a] rounded-2xl p-8 md:p-10 text-white">
-          <p className="text-sm uppercase tracking-wide text-white/70 font-brand-secondary">Flowly Studio</p>
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-14">
+        <div className="bg-gradient-to-r from-brand-midnight to-[#0f172a] rounded-2xl p-6 sm:p-8 md:p-10 text-white">
+          <p className="text-sm uppercase tracking-wide text-white/70 font-brand-secondary">Estúdio Flowly</p>
           <h2 className="mt-2 text-3xl md:text-4xl font-brand-primary font-bold max-w-3xl">
-            Da ideia ao produto digital com estrategia, design e engenharia no mesmo fluxo.
+            Da ideia ao produto digital com estratégia, design e engenharia no mesmo fluxo.
           </h2>
           <p className="mt-3 text-white/80 font-brand-secondary max-w-2xl">
-            Desenvolvemos software e websites focados em crescimento, operacao e experiencia do cliente.
+            Desenvolvemos software e websites focados em crescimento, operação e experiência do cliente.
           </p>
           <div className="mt-6">
             <LeadRequestModal />
@@ -186,8 +192,8 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="max-w-7xl mx-auto px-6 py-6">
-        <h2 className="text-3xl font-brand-primary font-bold text-brand-midnight mb-6">Perguntas frequentes</h2>
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+        <h2 className="text-2xl sm:text-3xl font-brand-primary font-bold text-brand-midnight mb-6">Perguntas frequentes</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="brand-card p-5">
             <h3 className="font-brand-primary font-semibold text-brand-midnight">Fazem só software ou também websites?</h3>
@@ -202,6 +208,12 @@ export default async function Home() {
             </p>
           </div>
           <div className="brand-card p-5">
+            <h3 className="font-brand-primary font-semibold text-brand-midnight">Como funciona o orçamento?</h3>
+            <p className="mt-2 text-sm text-brand-slate font-brand-secondary">
+              Enviamos orçamento com fases, entregáveis e prioridade de implementação. Sem custos escondidos.
+            </p>
+          </div>
+          <div className="brand-card p-5">
             <h3 className="font-brand-primary font-semibold text-brand-midnight">Podem integrar com sistemas existentes?</h3>
             <p className="mt-2 text-sm text-brand-slate font-brand-secondary">
               Sim. Integramos com ERP, faturação, e-commerce, email, WhatsApp e outras APIs.
@@ -213,11 +225,17 @@ export default async function Home() {
               Sim, com opção de suporte pontual ou avença mensal de evolução contínua.
             </p>
           </div>
+          <div className="brand-card p-5">
+            <h3 className="font-brand-primary font-semibold text-brand-midnight">O código e a solução ficam do cliente?</h3>
+            <p className="mt-2 text-sm text-brand-slate font-brand-secondary">
+              Depende do acordo inicial. Esse ponto fica sempre definido de forma transparente na proposta e no arranque do projeto.
+            </p>
+          </div>
         </div>
       </section>
 
-      <section className="max-w-7xl mx-auto px-6 pb-10">
-        <div className="bg-gradient-to-r from-[#0b1220] to-[#0f172a] rounded-2xl border border-white/10 p-8 md:p-10 text-white">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 pb-10">
+        <div className="bg-gradient-to-r from-[#0b1220] to-[#0f172a] rounded-2xl border border-white/10 p-6 sm:p-8 md:p-10 text-white">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-white/60 font-brand-secondary">
@@ -232,9 +250,9 @@ export default async function Home() {
 
               <div className="mt-6 flex flex-wrap gap-2">
                 {[
-                  'Processo auditável por milestones',
-                  'Arquitetura e segurança by design',
-                  'SLA de resposta acordado por projeto',
+                  'Processo auditável por etapas',
+                  'Arquitetura e segurança pensadas de raiz',
+                  'Acordo de tempos de resposta por projeto',
                 ].map((badge) => (
                   <span
                     key={badge}

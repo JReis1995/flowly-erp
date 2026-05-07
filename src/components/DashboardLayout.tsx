@@ -84,35 +84,30 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   
   // Função para verificar se um módulo deve ser mostrado
   const shouldShowModule = (module: Module): boolean => {
+    // 1) Item de navegação base: mantém 1 <li> estável entre SSR e 1.º paint (evita hidratação)
+    if (module.alwaysShow) return true
+
+    // 2) Enquanto permissões carregam, não listar o resto (incl. "Site Flowly" por role)
+    if (modulesLoading) return false
+
     if (module.id === 'landing-publica') {
       if (isImpersonateActive || isDemoMode) return false
       return userData.role === 'superadmin' || userData.role === 'developer'
     }
 
-    // "Central SaaS" é área estritamente interna.
     if (module.moduleName === 'central_saas') {
       if (isImpersonateActive || isDemoMode) return false
       return userData.role === 'superadmin' || userData.role === 'developer'
     }
 
-    // Sempre mostrar se alwaysShow for true (ex: Página Inicial)
-    if (module.alwaysShow) return true
-    
-    // Durante loading, não mostrar módulos controlados (evita flash)
-    if (modulesLoading) return false
-    
-    // Se não tem moduleName, não mostrar
     if (!module.moduleName) return false
-    
-    // IMPERSONATE: Superadmin vê como cliente - apenas módulos do cliente
+
     if (isImpersonateActive || isDemoMode) {
       return visibleModules.includes(module.moduleName)
     }
-    
-    // SUPERADMIN normal (sem impersonate): Ver todos os módulos
+
     if (userData.role === 'superadmin') return true
-    
-    // Outros utilizadores: Verificar se está nos módulos visíveis
+
     return visibleModules.includes(module.moduleName)
   }
   
@@ -124,17 +119,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const supabaseClient = createBrowserClient()
   const supabase = supabaseClient
   
-  // User data state - agora com role real do Supabase
-  const [userData, setUserData] = useState(() => {
-    // Tentar recuperar role do localStorage (persistência temporária)
-    const savedRole = typeof window !== 'undefined' ? localStorage.getItem('flowly_user_role') : null
-    return {
-      name: 'João Silva',
-      email: 'joao@flowly.com',
-      role: savedRole || 'Utilizador',
-      profileImage: null as string | null,
-      theme: 'claro' as 'claro' | 'escuro' | 'neutro'
-    }
+  // SSR e 1.º frame do cliente devem coincidir: não ler localStorage no estado inicial
+  const [userData, setUserData] = useState({
+    name: 'João Silva',
+    email: 'joao@flowly.com',
+    role: 'Utilizador',
+    profileImage: null as string | null,
+    theme: 'claro' as 'claro' | 'escuro' | 'neutro',
   })
   
   // Guardar role original separadamente - NUNCA muda durante impersonate
@@ -154,6 +145,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const savedRole = localStorage.getItem('flowly_user_role')
     if (savedRole && (savedRole === 'superadmin' || savedRole === 'developer')) {
       setOriginalUserRole(savedRole)
+      setUserData((prev) => ({ ...prev, role: savedRole }))
     }
   }, [])
   

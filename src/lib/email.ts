@@ -25,6 +25,15 @@ function getEmailLogoUrl(): string {
   return LOGO_URL;
 }
 
+/** Escape mínimo para texto interpolado em HTML (evita quebra de layout / XSS). */
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 // Estilos globais seguindo o Design System oficial Flowly
 const STYLES = {
   body: `
@@ -180,9 +189,13 @@ export interface LeadInternalNotificationEmailData {
   email: string;
   empresa?: string | null;
   tipoProjeto: string;
+  /** Texto livre quando `tipoProjeto` é `outro`. */
+  tipoProjetoOutro?: string | null;
   objetivoPrincipal?: string | null;
   utilizadores?: string | null;
   integracoes?: string | null;
+  /** Texto livre quando `integracoes` é `sim-outras`. */
+  integracoesOutra?: string | null;
   orcamento?: string | null;
   modalidadeManutencao?: string | null;
   descricao?: string | null;
@@ -520,13 +533,30 @@ export async function sendLeadInternalNotificationEmail(
       email,
       empresa,
       tipoProjeto,
+      tipoProjetoOutro,
       objetivoPrincipal,
       utilizadores,
       integracoes,
+      integracoesOutra,
       orcamento,
       modalidadeManutencao,
       descricao,
     } = data;
+
+    const tipoProjetoLinha =
+      tipoProjeto === "outro" && tipoProjetoOutro
+        ? `Outro — ${escapeHtml(tipoProjetoOutro)}`
+        : escapeHtml(tipoProjeto);
+
+    const integracoesLinha =
+      integracoes === "sim-outras" && integracoesOutra
+        ? `Outras integrações — ${escapeHtml(integracoesOutra)}`
+        : escapeHtml(integracoes || "Não indicado");
+
+    const assuntoTipo =
+      tipoProjeto === "outro" && tipoProjetoOutro
+        ? `Outro — ${tipoProjetoOutro.length > 48 ? `${tipoProjetoOutro.slice(0, 47)}…` : tipoProjetoOutro}`
+        : tipoProjeto;
 
     const html = `
 <!DOCTYPE html>
@@ -553,16 +583,16 @@ export async function sendLeadInternalNotificationEmail(
             <td style="${STYLES.content}">
               <h1 style="${STYLES.heading1}">Nova lead recebida no site</h1>
               <div style="${STYLES.infoBox}">
-                <p style="${STYLES.text}"><strong style="${STYLES.strong}">Nome:</strong> ${nome}</p>
-                <p style="${STYLES.text}"><strong style="${STYLES.strong}">Email:</strong> ${email}</p>
-                <p style="${STYLES.text}"><strong style="${STYLES.strong}">Empresa:</strong> ${empresa || 'Não indicado'}</p>
-                <p style="${STYLES.text}"><strong style="${STYLES.strong}">Tipo de projeto:</strong> ${tipoProjeto}</p>
-                <p style="${STYLES.text}"><strong style="${STYLES.strong}">Objetivo principal:</strong> ${objetivoPrincipal || 'Não indicado'}</p>
-                <p style="${STYLES.text}"><strong style="${STYLES.strong}">Utilizadores:</strong> ${utilizadores || 'Não indicado'}</p>
-                <p style="${STYLES.text}"><strong style="${STYLES.strong}">Integrações:</strong> ${integracoes || 'Não indicado'}</p>
-                <p style="${STYLES.text}"><strong style="${STYLES.strong}">Orçamento:</strong> ${orcamento || 'Não indicado'}</p>
-                <p style="${STYLES.text}"><strong style="${STYLES.strong}">Manutenção:</strong> ${modalidadeManutencao || 'Não indicado'}</p>
-                <p style="${STYLES.text}"><strong style="${STYLES.strong}">Contexto:</strong> ${descricao || 'Sem contexto adicional.'}</p>
+                <p style="${STYLES.text}"><strong style="${STYLES.strong}">Nome:</strong> ${escapeHtml(nome)}</p>
+                <p style="${STYLES.text}"><strong style="${STYLES.strong}">Email:</strong> ${escapeHtml(email)}</p>
+                <p style="${STYLES.text}"><strong style="${STYLES.strong}">Empresa:</strong> ${escapeHtml(empresa || 'Não indicado')}</p>
+                <p style="${STYLES.text}"><strong style="${STYLES.strong}">Tipo de projeto:</strong> ${tipoProjetoLinha}</p>
+                <p style="${STYLES.text}"><strong style="${STYLES.strong}">Objetivo principal:</strong> ${escapeHtml(objetivoPrincipal || 'Não indicado')}</p>
+                <p style="${STYLES.text}"><strong style="${STYLES.strong}">Utilizadores:</strong> ${escapeHtml(utilizadores || 'Não indicado')}</p>
+                <p style="${STYLES.text}"><strong style="${STYLES.strong}">Integrações:</strong> ${integracoesLinha}</p>
+                <p style="${STYLES.text}"><strong style="${STYLES.strong}">Orçamento:</strong> ${escapeHtml(orcamento || 'Não indicado')}</p>
+                <p style="${STYLES.text}"><strong style="${STYLES.strong}">Manutenção:</strong> ${escapeHtml(modalidadeManutencao || 'Não indicado')}</p>
+                <p style="${STYLES.text}"><strong style="${STYLES.strong}">Contexto:</strong> ${escapeHtml(descricao || 'Sem contexto adicional.')}</p>
               </div>
             </td>
           </tr>
@@ -587,7 +617,7 @@ export async function sendLeadInternalNotificationEmail(
       from: `Flowly Leads <${FROM_COMERCIAL}>`,
       to,
       replyTo: REPLY_TO_COMERCIAL,
-      subject: `Nova lead: ${tipoProjeto} - ${nome}`,
+      subject: `Nova lead: ${assuntoTipo} - ${nome}`,
       html,
     });
 

@@ -7,9 +7,11 @@ type LeadPayload = {
   email?: string
   empresa?: string
   tipoProjeto?: string
+  tipoProjetoOutro?: string
   objetivoPrincipal?: string
   utilizadores?: string
   integracoes?: string
+  integracoesOutra?: string
   orcamento?: string
   modalidadeManutencao?: string
   descricao?: string
@@ -56,9 +58,11 @@ export async function POST(req: NextRequest) {
     const email = sanitizeText(body.email, 180).toLowerCase()
     const empresa = sanitizeText(body.empresa, 160)
     const tipoProjeto = sanitizeText(body.tipoProjeto, 120)
+    const tipoProjetoOutro = sanitizeText(body.tipoProjetoOutro, 160)
     const objetivoPrincipal = sanitizeText(body.objetivoPrincipal, 120)
     const utilizadores = sanitizeText(body.utilizadores, 60)
     const integracoes = sanitizeText(body.integracoes, 120)
+    const integracoesOutra = sanitizeText(body.integracoesOutra, 160)
     const orcamento = sanitizeText(body.orcamento, 120)
     const modalidadeManutencao = sanitizeText(body.modalidadeManutencao, 120)
     const descricao = sanitizeText(body.descricao, 4000)
@@ -71,6 +75,24 @@ export async function POST(req: NextRequest) {
     }
     if (!tipoProjeto) {
       return NextResponse.json({ error: 'Tipo de projeto é obrigatório.' }, { status: 400 })
+    }
+    if (tipoProjeto === 'outro' && tipoProjetoOutro.length < 3) {
+      return NextResponse.json(
+        { error: 'Indica qual é o tipo de projeto pretendido.' },
+        { status: 400 }
+      )
+    }
+    if (descricao.trim().length < 10) {
+      return NextResponse.json(
+        { error: 'Descreve o teu pedido com pelo menos 10 caracteres nas observações.' },
+        { status: 400 }
+      )
+    }
+    if (integracoes === 'sim-outras' && integracoesOutra.length < 3) {
+      return NextResponse.json(
+        { error: 'Indica quais as integrações pretendidas.' },
+        { status: 400 }
+      )
     }
 
     const admin = createServiceClient()
@@ -89,13 +111,15 @@ export async function POST(req: NextRequest) {
         empresa: empresa || null,
         tipo_projeto: tipoProjeto,
         orcamento: orcamento || null,
-        descricao: descricao || 'Sem contexto adicional.',
+        descricao,
         origem: 'website',
         estado: 'new',
         metadata: {
+          tipo_projeto_outro: tipoProjeto === 'outro' ? tipoProjetoOutro || null : null,
           objetivo_principal: objetivoPrincipal || null,
           utilizadores_estimados: utilizadores || null,
           integracoes: integracoes || null,
+          integracoes_outras: integracoes === 'sim-outras' ? integracoesOutra || null : null,
           modalidade_manutencao: modalidadeManutencao || null,
           user_agent: req.headers.get('user-agent') ?? null,
           referer: req.headers.get('referer') ?? null,
@@ -109,7 +133,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Não foi possível guardar o pedido.' }, { status: 500 })
     }
 
-    const notificationEmail = process.env.LEADS_NOTIFICATION_EMAIL || 'comercial@flowly.pt'
+    const notificationEmail =
+      process.env.LEADS_NOTIFICATION_EMAIL?.trim() || 'comercial@inbound.flowly.pt'
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[api/leads] notificação interna (to):', notificationEmail)
+    }
+
     const emailJobs = Promise.allSettled([
       sendLeadRequestReceivedEmail({
         to: email,
@@ -122,9 +152,11 @@ export async function POST(req: NextRequest) {
         email,
         empresa: empresa || null,
         tipoProjeto,
+        tipoProjetoOutro: tipoProjeto === 'outro' ? tipoProjetoOutro || null : null,
         objetivoPrincipal: objetivoPrincipal || null,
         utilizadores: utilizadores || null,
         integracoes: integracoes || null,
+        integracoesOutra: integracoes === 'sim-outras' ? integracoesOutra || null : null,
         orcamento: orcamento || null,
         modalidadeManutencao: modalidadeManutencao || null,
         descricao: descricao || null,
