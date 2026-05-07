@@ -136,10 +136,6 @@ export async function POST(req: NextRequest) {
     const notificationEmail =
       process.env.LEADS_NOTIFICATION_EMAIL?.trim() || 'comercial@inbound.flowly.pt'
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[api/leads] notificação interna (to):', notificationEmail)
-    }
-
     const emailJobs = Promise.allSettled([
       sendLeadRequestReceivedEmail({
         to: email,
@@ -163,19 +159,32 @@ export async function POST(req: NextRequest) {
       }),
     ])
 
+    const emailLabels = ['confirmacao_cliente', 'notificacao_interna'] as const
+
+    console.log('[api/leads] emails agendados', {
+      leadId: data.id,
+      paraCliente: email,
+      paraEquipa: notificationEmail,
+      temResendKey: Boolean(process.env.RESEND_API_KEY),
+    })
+
     try {
-      const settled = await withTimeout(emailJobs, 1200)
+      // Serverless + Resend: 1.2s era curto de mais; erros só apareciam nos logs do servidor (não no browser)
+      const settled = await withTimeout(emailJobs, 12_000)
       settled.forEach((result, index) => {
+        const label = emailLabels[index] ?? `email_${index + 1}`
         if (result.status === 'rejected') {
-          console.error(`[api/leads] falha no envio de email #${index + 1}:`, result.reason)
+          console.error(`[api/leads] lead ${data.id} ${label} rejeitado:`, result.reason)
           return
         }
         if (!result.value.success) {
-          console.error(`[api/leads] email #${index + 1} retornou erro:`, result.value.error)
+          console.error(`[api/leads] lead ${data.id} ${label} Resend:`, result.value.error)
+          return
         }
+        console.log(`[api/leads] lead ${data.id} ${label} enviado`)
       })
     } catch (dispatchError) {
-      console.error('[api/leads] timeout no disparo de emails:', dispatchError)
+      console.error(`[api/leads] lead ${data.id} timeout ou falha ao aguardar emails:`, dispatchError)
     }
 
     return NextResponse.json({ success: true, leadId: data.id }, { status: 201 })
