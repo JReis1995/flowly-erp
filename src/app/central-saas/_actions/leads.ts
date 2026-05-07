@@ -48,6 +48,23 @@ export type CrmLeadListItem = CrmLeadRow & {
   next_task: CrmLeadTask | null;
 };
 
+export type GetCrmLeadsInput = {
+  stage?: string;
+  ownerUserId?: string;
+  onlySlaRisk?: boolean;
+  page?: number;
+  pageSize?: number;
+};
+
+export type GetCrmLeadsResult = {
+  data: CrmLeadListItem[];
+  error: string | null;
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
 export type ProfileBasic = {
   id: string;
   nome: string | null;
@@ -101,13 +118,14 @@ async function logTimeline(
     createdBy?: string | null;
     data?: Record<string, unknown>;
   }
-) {
-  await supabase.from("crm_lead_timeline").insert({
+): Promise<{ error: string | null }> {
+  const { error } = await supabase.from("crm_lead_timeline").insert({
     lead_id: payload.leadId,
     event_type: payload.eventType,
     created_by: payload.createdBy ?? null,
     payload: payload.data ?? {},
   });
+  return { error: error?.message ?? null };
 }
 
 export async function getCrmOwners(): Promise<{ data: ProfileBasic[]; error: string | null }> {
@@ -126,24 +144,69 @@ export async function getCrmOwners(): Promise<{ data: ProfileBasic[]; error: str
   return { data: (data as ProfileBasic[]) ?? [], error: null };
 }
 
-export async function getCrmLeads(): Promise<{ data: CrmLeadListItem[]; error: string | null }> {
+export async function getCrmLeads(input: GetCrmLeadsInput = {}): Promise<GetCrmLeadsResult> {
   const { allowed } = await checkAdminAccess();
-  if (!allowed) return { data: [], error: "Acesso negado" };
+  if (!allowed) {
+    return { data: [], error: "Acesso negado", total: 0, page: 1, pageSize: 20, totalPages: 0 };
+  }
+
+  const pageSize = Math.min(100, Math.max(5, input.pageSize ?? 20));
+  const page = Math.max(1, input.page ?? 1);
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
 
   const supabase = await createServerSupabase();
-  const { data: leads, error: leadsError } = await supabase
+  let leadsQuery = supabase
     .from("leads_inbound")
     .select(
-      "id, created_at, nome, email, empresa, tipo_projeto, descricao, metadata, estado, owner_user_id, stage_id, first_contact_at, next_action_at, updated_at"
+      "id, created_at, nome, email, empresa, tipo_projeto, descricao, metadata, estado, owner_user_id, stage_id, first_contact_at, next_action_at, updated_at",
+      { count: "exact" }
     )
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .range(from, to);
+
+  if (input.stage && ALLOWED_STAGES.has(input.stage)) {
+    leadsQuery = leadsQuery.eq("stage_id", input.stage);
+  }
+
+  if (input.ownerUserId) {
+    if (input.ownerUserId === "none") {
+      leadsQuery = leadsQuery.is("owner_user_id", null);
+    } else {
+      leadsQuery = leadsQuery.eq("owner_user_id", input.ownerUserId);
+    }
+  }
+
+  if (input.onlySlaRisk) {
+    const riskThresholdIso = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    leadsQuery = leadsQuery.or(`next_action_at.is.null,next_action_at.lt.${riskThresholdIso}`);
+  }
+
+  const { data: leads, error: leadsError, count } = await leadsQuery;
 
   if (leadsError) {
-    return { data: [], error: leadsError.message };
+    return {
+      data: [],
+      error: leadsError.message,
+      total: 0,
+      page,
+      pageSize,
+      totalPages: 0,
+    };
   }
 
   const leadRows = (leads as CrmLeadRow[]) ?? [];
-  if (leadRows.length === 0) return { data: [], error: null };
+  if (leadRows.length === 0) {
+    const total = count ?? 0;
+    return {
+      data: [],
+      error: null,
+      total,
+      page,
+      pageSize,
+      totalPages: total > 0 ? Math.ceil(total / pageSize) : 0,
+    };
+  }
 
   const ownerIds = [...new Set(leadRows.map((lead) => lead.owner_user_id).filter(Boolean))] as string[];
   const leadIds = leadRows.map((lead) => lead.id);
@@ -177,7 +240,74 @@ export async function getCrmLeads(): Promise<{ data: CrmLeadListItem[]; error: s
     next_task: taskMap.get(lead.id) ?? null,
   }));
 
-  return { data, error: null };
+  const total = count ?? 0;
+  return {
+    data,
+    error: null,
+    total,
+    page,
+    pageSize,
+    totalPages: total > 0 ? Math.ceil(total / pageSize) : 0,
+  };
+}
+
+/** Contagens globais do pipeline (sem filtros da lista) — métricas operacionais Bloco 4. */
+const PIPELINE_STAGE_IDS = ["new", "qualified", "proposal", "won", "lost"] as const;
+
+export type CrmPipelineCounts = {
+  total: number;
+  byStage: Record<(typeof PIPELINE_STAGE_IDS)[number], number>;
+  /** Mesmo critério que «SLA em risco» na lista: sem próxima ação ou prazo antes de 24 h. */
+  slaRiskTotal: number;
+};
+
+export async function getCrmLeadPipelineCounts(): Promise<{
+  data: CrmPipelineCounts | null;
+  error: string | null;
+}> {
+  const { allowed } = await checkAdminAccess();
+  if (!allowed) {
+    return { data: null, error: "Acesso negado" };
+  }
+
+  const supabase = await createServerSupabase();
+  const riskThresholdIso = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+  const results = await Promise.all([
+    supabase.from("leads_inbound").select("*", { count: "exact", head: true }),
+    ...PIPELINE_STAGE_IDS.map((stage) =>
+      supabase.from("leads_inbound").select("*", { count: "exact", head: true }).eq("stage_id", stage)
+    ),
+    supabase
+      .from("leads_inbound")
+      .select("*", { count: "exact", head: true })
+      .or(`next_action_at.is.null,next_action_at.lt.${riskThresholdIso}`),
+  ]);
+
+  for (const res of results) {
+    if (res.error) return { data: null, error: res.error.message };
+  }
+
+  const totalRes = results[0];
+  const slaRes = results[results.length - 1];
+  const stageResults = results.slice(1, -1);
+
+  const byStage = {
+    new: stageResults[0]?.count ?? 0,
+    qualified: stageResults[1]?.count ?? 0,
+    proposal: stageResults[2]?.count ?? 0,
+    won: stageResults[3]?.count ?? 0,
+    lost: stageResults[4]?.count ?? 0,
+  };
+
+  return {
+    data: {
+      total: totalRes.count ?? 0,
+      byStage,
+      slaRiskTotal: slaRes.count ?? 0,
+    },
+    error: null,
+  };
 }
 
 export async function assignLeadOwner(leadId: string, ownerUserId: string | null) {
@@ -207,7 +337,7 @@ export async function assignLeadOwner(leadId: string, ownerUserId: string | null
 
   if (error) return { success: false, error: error.message };
 
-  await logTimeline(supabase, {
+  const tl = await logTimeline(supabase, {
     leadId,
     eventType: "owner_changed",
     createdBy: profile?.id,
@@ -216,6 +346,7 @@ export async function assignLeadOwner(leadId: string, ownerUserId: string | null
       owner_user_id: ownerUserId,
     },
   });
+  if (tl.error) console.error("[assignLeadOwner] timeline:", tl.error);
 
   revalidatePath("/central-saas/leads");
   return { success: true, error: null };
@@ -247,7 +378,7 @@ export async function moveLeadStage(leadId: string, stageId: string) {
 
   if (error) return { success: false, error: error.message };
 
-  await logTimeline(supabase, {
+  const tl = await logTimeline(supabase, {
     leadId,
     eventType: "stage_changed",
     createdBy: profile?.id,
@@ -256,6 +387,7 @@ export async function moveLeadStage(leadId: string, stageId: string) {
       stage_id: stageId,
     },
   });
+  if (tl.error) console.error("[moveLeadStage] timeline:", tl.error);
 
   revalidatePath("/central-saas/leads");
   return { success: true, error: null };
@@ -296,7 +428,7 @@ export async function createLeadTask(input: {
     .update({ next_action_at: input.dueAt ?? new Date().toISOString() })
     .eq("id", input.leadId);
 
-  await logTimeline(supabase, {
+  const tl = await logTimeline(supabase, {
     leadId: input.leadId,
     eventType: "task_created",
     createdBy: profile?.id,
@@ -306,6 +438,7 @@ export async function createLeadTask(input: {
       due_at: data.due_at,
     },
   });
+  if (tl.error) console.error("[createLeadTask] timeline:", tl.error);
 
   revalidatePath("/central-saas/leads");
   return { success: true, error: null, data: data as CrmLeadTask };
@@ -338,7 +471,7 @@ export async function completeLeadTask(taskId: string) {
 
   if (error) return { success: false, error: error.message };
 
-  await logTimeline(supabase, {
+  const tl = await logTimeline(supabase, {
     leadId: existing.lead_id,
     eventType: "task_done",
     createdBy: profile?.id,
@@ -347,6 +480,7 @@ export async function completeLeadTask(taskId: string) {
       title: existing.title,
     },
   });
+  if (tl.error) console.error("[completeLeadTask] timeline:", tl.error);
 
   revalidatePath("/central-saas/leads");
   return { success: true, error: null };
@@ -372,14 +506,16 @@ export async function getCrmLeadDetail(leadId: string): Promise<{
   data: {
     lead: CrmLeadRow | null;
     owner: ProfileBasic | null;
+    owners: ProfileBasic[];
     tasks: CrmLeadTask[];
     timeline: CrmTimelineItem[];
   };
   error: string | null;
+  notFound: boolean;
 }> {
   const { allowed } = await checkAdminAccess();
   if (!allowed) {
-    return { data: { lead: null, owner: null, tasks: [], timeline: [] }, error: "Acesso negado" };
+    return { data: { lead: null, owner: null, owners: [], tasks: [], timeline: [] }, error: "Acesso negado", notFound: false };
   }
 
   const supabase = await createServerSupabase();
@@ -392,14 +528,22 @@ export async function getCrmLeadDetail(leadId: string): Promise<{
     .single();
 
   if (leadError || !lead) {
-    return { data: { lead: null, owner: null, tasks: [], timeline: [] }, error: leadError?.message ?? "Lead não encontrada" };
+    return {
+      data: { lead: null, owner: null, owners: [], tasks: [], timeline: [] },
+      error: leadError?.message ?? "Lead não encontrada",
+      notFound: true,
+    };
   }
 
   const leadRow = lead as CrmLeadRow;
-  const [ownerRes, tasksRes, timelineRes] = await Promise.all([
+  const [ownerRes, ownersRes, tasksRes, timelineRes] = await Promise.all([
     leadRow.owner_user_id
       ? supabase.from("profiles").select("id, nome, role").eq("id", leadRow.owner_user_id).single()
       : Promise.resolve({ data: null, error: null }),
+    supabase
+      .from("profiles")
+      .select("id, nome, role")
+      .order("nome", { ascending: true }),
     supabase
       .from("crm_lead_tasks")
       .select("id, lead_id, title, due_at, status, assigned_user_id, created_at, completed_at")
@@ -419,10 +563,12 @@ export async function getCrmLeadDetail(leadId: string): Promise<{
     data: {
       lead: leadRow,
       owner: (ownerRes.data as ProfileBasic | null) ?? null,
+      owners: (ownersRes.data as ProfileBasic[]) ?? [],
       tasks: (tasksRes.data as CrmLeadTask[]) ?? [],
       timeline: (timelineRes.data as CrmTimelineItem[]) ?? [],
     },
-    error: tasksRes.error?.message ?? timelineRes.error?.message ?? null,
+    error: ownersRes.error?.message ?? tasksRes.error?.message ?? timelineRes.error?.message ?? null,
+    notFound: false,
   };
 }
 
@@ -430,7 +576,7 @@ export async function sendLeadEmail(input: {
   leadId: string;
   subject: string;
   message: string;
-}) {
+}): Promise<{ success: boolean; error: string | null; warning?: string | null }> {
   const { allowed } = await checkAdminAccess();
   if (!allowed) return { success: false, error: "Acesso negado" };
 
@@ -470,7 +616,7 @@ export async function sendLeadEmail(input: {
     return { success: false, error: sendResult.error ?? "Falha ao enviar email." };
   }
 
-  await logTimeline(supabase, {
+  const tl = await logTimeline(supabase, {
     leadId: input.leadId,
     eventType: "email_sent",
     createdBy: profile?.id,
@@ -479,9 +625,19 @@ export async function sendLeadEmail(input: {
       to: lead.email,
       reply_to: leadReplyTo,
       message_id: sendResult.messageId ?? null,
+      body: message,
     },
   });
 
   revalidatePath(`/central-saas/leads/${input.leadId}`);
+  if (tl.error) {
+    console.error("[sendLeadEmail] timeline:", tl.error);
+    return {
+      success: true,
+      error: null,
+      warning:
+        "O email foi enviado, mas não foi possível registar o envio na timeline. Verifica políticas RLS em crm_lead_timeline ou tenta outra vez.",
+    };
+  }
   return { success: true, error: null };
 }

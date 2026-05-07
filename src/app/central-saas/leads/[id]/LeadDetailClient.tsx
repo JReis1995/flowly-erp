@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
@@ -11,6 +11,7 @@ import {
   Clock3,
   FileText,
   History,
+  Inbox,
   Loader2,
   Mail,
   Plus,
@@ -30,6 +31,12 @@ import {
   type CrmTimelineItem,
   type ProfileBasic,
 } from "../../_actions/leads";
+
+function emailPayloadBody(payload: Record<string, unknown>): string | null {
+  const b = payload.body ?? payload.message ?? payload.text;
+  if (typeof b === "string" && b.length > 0) return b;
+  return null;
+}
 
 type Props = {
   lead: CrmLeadRow;
@@ -143,17 +150,89 @@ function timelineText(eventType: string, payload: Record<string, unknown>) {
       return `Tarefa criada: ${String(payload.title ?? "sem título")}.`;
     case "task_done":
       return `Tarefa concluída: ${String(payload.title ?? "sem título")}.`;
-    case "email_sent":
-      return `Email enviado: ${String(payload.subject ?? "sem assunto")}.`;
+    case "email_sent": {
+      const sub = String(payload.subject ?? "sem assunto");
+      const to = payload.to != null ? String(payload.to) : "";
+      return to
+        ? `Email enviado para ${to} — assunto: «${sub}».`
+        : `Email enviado — assunto: «${sub}».`;
+    }
+    case "email_received": {
+      const sub = String(payload.subject ?? "sem assunto");
+      const from = payload.from != null ? String(payload.from) : "";
+      return from
+        ? `Email recebido de ${from} — assunto: «${sub}».`
+        : `Email recebido — assunto: «${sub}».`;
+    }
     default:
       return eventType;
   }
+}
+
+function EmailHistoryRow({
+  item,
+  expanded,
+  onToggle,
+}: {
+  item: CrmTimelineItem;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const payload = item.payload ?? {};
+  const body = emailPayloadBody(payload);
+  const isSent = item.event_type === "email_sent";
+  const sub = String(payload.subject ?? "(sem assunto)");
+  const to = payload.to != null ? String(payload.to) : "";
+  const from = payload.from != null ? String(payload.from) : "";
+
+  return (
+    <div className="border border-brand-border rounded-lg p-4 bg-white/60">
+      <div className="flex flex-wrap items-center gap-2 mb-2">
+        <span
+          className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+            isSent ? "bg-sky-100 text-sky-900" : "bg-emerald-100 text-emerald-900"
+          }`}
+        >
+          {isSent ? "Enviado" : "Recebido"}
+        </span>
+        <span className="text-xs text-brand-slate">{formatDate(item.created_at)}</span>
+      </div>
+      <p className="text-sm font-medium text-brand-midnight">{sub}</p>
+      <p className="text-xs text-brand-slate mt-1">
+        {isSent ? (to ? `Para: ${to}` : "Para: —") : from ? `De: ${from}` : "De: —"}
+      </p>
+      {body ? (
+        <>
+          <button type="button" onClick={onToggle} className="mt-2 text-xs text-brand-primary hover:underline">
+            {expanded ? "Ocultar corpo" : "Ver corpo"}
+          </button>
+          {expanded && (
+            <pre className="mt-2 max-h-72 overflow-y-auto rounded-lg border border-brand-border bg-brand-light/50 p-3 text-sm text-brand-midnight whitespace-pre-wrap break-words">
+              {body}
+            </pre>
+          )}
+        </>
+      ) : isSent ? (
+        <p className="text-xs text-brand-slate mt-2">Corpo não guardado (envio anterior à atualização).</p>
+      ) : (
+        <p className="text-xs text-brand-slate mt-2">Sem corpo no registo.</p>
+      )}
+    </div>
+  );
 }
 
 export default function LeadDetailClient({ lead, owner, owners, tasks, timeline, replyToAddress }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  const [emailBodyOpen, setEmailBodyOpen] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNowMs(Date.now()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
   const defaultTemplate = emailTemplates[0];
   const saudacao = getSaudacao(lead.nome);
   const [selectedTemplate, setSelectedTemplate] = useState(defaultTemplate.id);
@@ -165,19 +244,28 @@ export default function LeadDetailClient({ lead, owner, owners, tasks, timeline,
 
   const ownerLabelCurrent = owner ? ownerLabel(owner) : "Sem dono";
   const pendingTasks = useMemo(() => tasks.filter((t) => t.status === "pending"), [tasks]);
+  const mailItems = useMemo(
+    () =>
+      [...timeline]
+        .filter((t) => t.event_type === "email_sent" || t.event_type === "email_received")
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
+    [timeline]
+  );
   const slaState = useMemo(() => {
     const due = pendingTasks[0]?.due_at ?? lead.next_action_at;
     if (!due) return { label: "Sem data definida", tone: "warning" as const };
-    const diffHours = (new Date(due).getTime() - Date.now()) / (1000 * 60 * 60);
+    const diffHours = (new Date(due).getTime() - nowMs) / (1000 * 60 * 60);
     if (diffHours < 0) return { label: "SLA atrasado", tone: "danger" as const };
     if (diffHours < 24) return { label: "SLA hoje/24h", tone: "warning" as const };
     return { label: "SLA dentro do prazo", tone: "ok" as const };
-  }, [pendingTasks, lead.next_action_at]);
+  }, [pendingTasks, lead.next_action_at, nowMs]);
 
   function timelineIcon(eventType: string) {
     switch (eventType) {
       case "email_sent":
         return <Send className="w-3 h-3" />;
+      case "email_received":
+        return <Inbox className="w-3 h-3" />;
       case "task_done":
         return <CheckCircle className="w-3 h-3" />;
       case "task_created":
@@ -197,14 +285,22 @@ export default function LeadDetailClient({ lead, owner, owners, tasks, timeline,
     setMessage(template.message(saudacao, lead.nome, lead.tipo_projeto));
   }
 
-  function runAction(action: () => Promise<{ success: boolean; error: string | null | undefined }>) {
+  function runAction(
+    action: () => Promise<{
+      success: boolean;
+      error?: string | null | undefined;
+      warning?: string | null | undefined;
+    }>
+  ) {
     startTransition(async () => {
       setError(null);
+      setWarning(null);
       const result = await action();
       if (!result.success) {
         setError(result.error ?? "Não foi possível concluir a ação.");
         return;
       }
+      if (result.warning) setWarning(result.warning);
       router.refresh();
     });
   }
@@ -212,6 +308,9 @@ export default function LeadDetailClient({ lead, owner, owners, tasks, timeline,
   return (
     <div className="space-y-6">
       {error && <div className="px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>}
+      {warning && (
+        <div className="px-4 py-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-sm">{warning}</div>
+      )}
 
       <section className="grid grid-cols-1 md:grid-cols-4 gap-3">
         <div className="brand-card p-4">
@@ -433,6 +532,43 @@ export default function LeadDetailClient({ lead, owner, owners, tasks, timeline,
         </div>
       </section>
 
+      <section className="brand-card p-5">
+        <h2 className="font-brand-primary font-semibold text-brand-midnight mb-2 inline-flex items-center gap-2">
+          <Mail className="w-4 h-4" />
+          Histórico de correio
+        </h2>
+        <p className="text-xs text-brand-slate mb-4 max-w-3xl">
+          Os envios feitos a partir desta página ficam com o texto completo guardado. Para as respostas da lead
+          aparecerem aqui e uma cópia chegar à caixa comercial: no Resend, adiciona um Webhook com o evento{" "}
+          <span className="font-mono text-brand-midnight">email.received</span> para{" "}
+          <span className="font-mono text-brand-midnight break-all">/api/webhooks/resend</span>, define{" "}
+          <span className="font-mono text-brand-midnight">RESEND_WEBHOOK_SECRET</span> no servidor (segredo do webhook) e
+          garante domínio de receiving + MX à Resend em{" "}
+          <span className="font-mono text-brand-midnight break-all">inbound.flowly.pt</span>. Opcional:{" "}
+          <span className="font-mono text-brand-midnight">EMAIL_INBOUND_FORWARD_TO</span> para onde reencaminhar a cópia
+          (por defeito usa a caixa da assinatura).
+        </p>
+        {mailItems.length === 0 ? (
+          <p className="text-sm text-brand-slate">Ainda não há mensagens de correio nesta lead.</p>
+        ) : (
+          <div className="space-y-3">
+            {mailItems.map((item) => (
+              <EmailHistoryRow
+                key={item.id}
+                item={item}
+                expanded={!!emailBodyOpen[item.id]}
+                onToggle={() =>
+                  setEmailBodyOpen((prev) => ({
+                    ...prev,
+                    [item.id]: !prev[item.id],
+                  }))
+                }
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <div className="brand-card p-5">
           <h2 className="font-brand-primary font-semibold text-brand-midnight mb-4">Tarefas</h2>
@@ -471,15 +607,43 @@ export default function LeadDetailClient({ lead, owner, owners, tasks, timeline,
           </h2>
           <div className="space-y-3">
             {timeline.length === 0 && <p className="text-sm text-brand-slate">Sem atividade registada.</p>}
-            {timeline.map((item) => (
-              <div key={item.id} className="border border-brand-border rounded-lg p-3">
-                <p className="text-sm text-brand-midnight inline-flex items-center gap-2">
-                  <span className="text-brand-slate">{timelineIcon(item.event_type)}</span>
-                  {timelineText(item.event_type, item.payload ?? {})}
-                </p>
-                <p className="text-xs text-brand-slate mt-1">{formatDate(item.created_at)}</p>
-              </div>
-            ))}
+            {timeline.map((item) => {
+              const payload = item.payload ?? {};
+              const mailBody = emailPayloadBody(payload);
+              const isMail = item.event_type === "email_sent" || item.event_type === "email_received";
+              const bodyOpen = !!emailBodyOpen[item.id];
+              return (
+                <div key={item.id} className="border border-brand-border rounded-lg p-3">
+                  <p className="text-sm text-brand-midnight inline-flex items-center gap-2">
+                    <span className="text-brand-slate">{timelineIcon(item.event_type)}</span>
+                    {timelineText(item.event_type, payload)}
+                  </p>
+                  <p className="text-xs text-brand-slate mt-1">{formatDate(item.created_at)}</p>
+                  {isMail && mailBody && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setEmailBodyOpen((prev) => ({
+                          ...prev,
+                          [item.id]: !prev[item.id],
+                        }))
+                      }
+                      className="mt-2 text-xs text-brand-primary hover:underline"
+                    >
+                      {bodyOpen ? "Ocultar corpo" : "Ver corpo"}
+                    </button>
+                  )}
+                  {isMail && !mailBody && item.event_type === "email_sent" && (
+                    <p className="text-xs text-brand-slate mt-2">Corpo não guardado (envio anterior à atualização).</p>
+                  )}
+                  {bodyOpen && mailBody && (
+                    <pre className="mt-2 max-h-48 overflow-y-auto rounded-md border border-brand-border bg-brand-light/40 p-2 text-xs text-brand-midnight whitespace-pre-wrap break-words">
+                      {mailBody}
+                    </pre>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>

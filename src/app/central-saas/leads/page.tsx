@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -14,10 +15,12 @@ import {
 import {
   assignLeadOwner,
   completeLeadTask,
+  getCrmLeadPipelineCounts,
   getCrmLeads,
   getCrmOwners,
   moveLeadStage,
   type CrmLeadListItem,
+  type CrmPipelineCounts,
   type ProfileBasic,
 } from "../_actions/leads";
 
@@ -61,39 +64,76 @@ export default function LeadsCrmPage() {
   const [owners, setOwners] = useState<OwnerOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [pending, startTransition] = useTransition();
-  const [filterStage, setFilterStage] = useState<string>("all");
-  const [filterOwner, setFilterOwner] = useState<string>("all");
-  const [onlySlaRisk, setOnlySlaRisk] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [filterStage, setFilterStage] = useState<string>(searchParams.get("stage") ?? "all");
+  const [filterOwner, setFilterOwner] = useState<string>(searchParams.get("owner") ?? "all");
+  const [onlySlaRisk, setOnlySlaRisk] = useState(searchParams.get("sla") === "risk");
+  const [page, setPage] = useState<number>(Number(searchParams.get("page") ?? "1"));
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [pipeline, setPipeline] = useState<CrmPipelineCounts | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function loadBaseData() {
-    setLoading(true);
-    setError(null);
+  function updateQuery(next: { stage?: string; owner?: string; sla?: boolean; page?: number }) {
+    const params = new URLSearchParams(searchParams.toString());
+    const stage = next.stage ?? filterStage;
+    const owner = next.owner ?? filterOwner;
+    const sla = next.sla ?? onlySlaRisk;
+    const nextPage = next.page ?? page;
 
-    const [leadsRes, ownersRes] = await Promise.all([getCrmLeads(), getCrmOwners()]);
-    if (leadsRes.error) setError(leadsRes.error);
-    if (ownersRes.error) setError(ownersRes.error);
+    if (stage === "all") params.delete("stage");
+    else params.set("stage", stage);
 
-    setLeads(leadsRes.data);
-    setOwners(ownersRes.data);
-    setLoading(false);
+    if (owner === "all") params.delete("owner");
+    else params.set("owner", owner);
+
+    if (sla) params.set("sla", "risk");
+    else params.delete("sla");
+
+    if (nextPage <= 1) params.delete("page");
+    else params.set("page", String(nextPage));
+
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname);
   }
 
+  const loadBaseData = useCallback(async () => {
+    setError(null);
+
+    const [leadsRes, ownersRes, pipelineRes] = await Promise.all([
+      getCrmLeads({
+        stage: filterStage === "all" ? undefined : filterStage,
+        ownerUserId: filterOwner === "all" ? undefined : filterOwner,
+        onlySlaRisk,
+        page,
+        pageSize: 20,
+      }),
+      getCrmOwners(),
+      getCrmLeadPipelineCounts(),
+    ]);
+    if (leadsRes.error) setError(leadsRes.error);
+    if (ownersRes.error) setError(ownersRes.error);
+    if (pipelineRes.error) setError(pipelineRes.error);
+
+    setLeads(leadsRes.data);
+    setTotal(leadsRes.total);
+    setTotalPages(leadsRes.totalPages);
+    setOwners(ownersRes.data);
+    setPipeline(pipelineRes.data);
+    setLoading(false);
+  }, [filterOwner, filterStage, onlySlaRisk, page]);
+
   useEffect(() => {
-    loadBaseData();
-  }, []);
+    startTransition(() => {
+      void loadBaseData();
+    });
+  }, [loadBaseData]);
 
   const visibleLeads = useMemo(() => {
-    return leads.filter((lead) => {
-      if (filterStage !== "all" && lead.stage_id !== filterStage) return false;
-      if (filterOwner !== "all" && (lead.owner_user_id ?? "none") !== filterOwner) return false;
-      if (onlySlaRisk) {
-        const sla = getSlaState(lead);
-        if (sla === "ok") return false;
-      }
-      return true;
-    });
-  }, [leads, filterStage, filterOwner, onlySlaRisk]);
+    return leads;
+  }, [leads]);
 
   function runAction(action: () => Promise<{ success: boolean; error: string | null | undefined }>) {
     startTransition(async () => {
@@ -123,9 +163,24 @@ export default function LeadsCrmPage() {
               Triagem diária com dono, etapa e próxima tarefa para cada lead.
             </p>
           </div>
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-brand-light rounded-lg">
-            <Workflow className="w-4 h-4 text-brand-primary" />
-            <span className="text-sm font-brand-secondary text-brand-midnight">{visibleLeads.length} leads visíveis</span>
+          <div className="inline-flex flex-col items-end gap-1 px-4 py-2 bg-brand-light rounded-lg text-right">
+            <div className="inline-flex items-center gap-2">
+              <Workflow className="w-4 h-4 text-brand-primary" />
+              <span className="text-sm font-brand-secondary text-brand-midnight">
+                {visibleLeads.length} nesta página · {total} com filtros atuais
+              </span>
+            </div>
+            {pipeline && (
+              <span className="text-xs text-brand-slate max-w-md leading-snug">
+                Pipeline global: {pipeline.total} · SLA em risco: {pipeline.slaRiskTotal}
+                {stageOptions.map((s) => (
+                  <span key={s.id}>
+                    {" "}
+                    · {s.label}: {pipeline.byStage[s.id]}
+                  </span>
+                ))}
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -133,7 +188,12 @@ export default function LeadsCrmPage() {
       <div className="brand-card p-4 mb-4">
         <div className="flex flex-wrap items-center gap-2">
           <button
-            onClick={() => setFilterStage("all")}
+            onClick={() => {
+              setLoading(true);
+              setFilterStage("all");
+              setPage(1);
+              updateQuery({ stage: "all", page: 1 });
+            }}
             className={`px-3 py-2 rounded-lg text-sm border ${
               filterStage === "all"
                 ? "bg-brand-primary text-white border-brand-primary"
@@ -145,7 +205,12 @@ export default function LeadsCrmPage() {
           {stageOptions.map((stage) => (
             <button
               key={stage.id}
-              onClick={() => setFilterStage(stage.id)}
+              onClick={() => {
+                setLoading(true);
+                setFilterStage(stage.id);
+                setPage(1);
+                updateQuery({ stage: stage.id, page: 1 });
+              }}
               className={`px-3 py-2 rounded-lg text-sm border ${
                 filterStage === stage.id
                   ? "bg-brand-primary text-white border-brand-primary"
@@ -161,7 +226,12 @@ export default function LeadsCrmPage() {
       <div className="brand-card p-4 mb-5 flex flex-wrap items-center gap-3">
         <select
           value={filterOwner}
-          onChange={(e) => setFilterOwner(e.target.value)}
+          onChange={(e) => {
+            setLoading(true);
+            setFilterOwner(e.target.value);
+            setPage(1);
+            updateQuery({ owner: e.target.value, page: 1 });
+          }}
           className="px-3 py-2 border border-brand-border rounded-lg bg-white text-sm"
         >
           <option value="all">Todos donos</option>
@@ -176,7 +246,12 @@ export default function LeadsCrmPage() {
           <input
             type="checkbox"
             checked={onlySlaRisk}
-            onChange={(e) => setOnlySlaRisk(e.target.checked)}
+            onChange={(e) => {
+              setLoading(true);
+              setOnlySlaRisk(e.target.checked);
+              setPage(1);
+              updateQuery({ sla: e.target.checked, page: 1 });
+            }}
             className="rounded border-brand-border"
           />
           Mostrar só SLA em risco
@@ -328,6 +403,38 @@ export default function LeadsCrmPage() {
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between text-sm text-brand-slate">
+        <span>
+          {total} leads no total {totalPages > 0 ? `· página ${page} de ${totalPages}` : ""}
+        </span>
+        <div className="inline-flex items-center gap-2">
+          <button
+            disabled={loading || pending || page <= 1}
+            onClick={() => {
+              setLoading(true);
+              const nextPage = Math.max(1, page - 1);
+              setPage(nextPage);
+              updateQuery({ page: nextPage });
+            }}
+            className="px-3 py-2 rounded-lg border border-brand-border bg-white disabled:opacity-50"
+          >
+            Anterior
+          </button>
+          <button
+            disabled={loading || pending || totalPages === 0 || page >= totalPages}
+            onClick={() => {
+              setLoading(true);
+              const nextPage = Math.min(totalPages, page + 1);
+              setPage(nextPage);
+              updateQuery({ page: nextPage });
+            }}
+            className="px-3 py-2 rounded-lg border border-brand-border bg-white disabled:opacity-50"
+          >
+            Seguinte
+          </button>
         </div>
       </div>
     </div>

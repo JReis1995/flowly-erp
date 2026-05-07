@@ -662,6 +662,8 @@ export async function sendLeadFollowUpEmail(
     }
 
     const safeMessage = escapeHtml(message).replace(/\n/g, "<br/>");
+    /** Texto simples (multipart) — o Gmail classifica melhor do que só HTML com rodapé promocional. */
+    const plainText = `${subject}\n\n${message}\n\n—\nEquipa Flowly · ${SIGNATURE_EMAIL}`;
 
     const html = `
 <!DOCTYPE html>
@@ -726,6 +728,7 @@ export async function sendLeadFollowUpEmail(
       to,
       replyTo,
       subject,
+      text: plainText,
       html,
       tags: [{ name: "workflow", value: "lead_follow_up" }],
     });
