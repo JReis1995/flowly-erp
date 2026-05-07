@@ -50,6 +50,15 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   })
 }
 
+function parseLeadNotificationRecipients(rawEnv: string | undefined): string[] {
+  const fallback = 'comercial@inbound.flowly.pt'
+  const raw = rawEnv?.trim()
+  if (!raw) return [fallback]
+  const unique = [...new Set(raw.split(',').map((p) => p.trim()).filter(Boolean))]
+  const valid = unique.filter((addr) => isValidEmail(addr))
+  return valid.length > 0 ? valid : [fallback]
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as LeadPayload
@@ -133,8 +142,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Não foi possível guardar o pedido.' }, { status: 500 })
     }
 
-    const notificationEmail =
-      process.env.LEADS_NOTIFICATION_EMAIL?.trim() || 'comercial@inbound.flowly.pt'
+    const notificationRecipients = parseLeadNotificationRecipients(
+      process.env.LEADS_NOTIFICATION_EMAIL
+    )
 
     const emailJobs = Promise.allSettled([
       sendLeadRequestReceivedEmail({
@@ -143,7 +153,7 @@ export async function POST(req: NextRequest) {
         tipoProjeto,
       }),
       sendLeadInternalNotificationEmail({
-        to: notificationEmail,
+        to: notificationRecipients,
         nome,
         email,
         empresa: empresa || null,
@@ -164,7 +174,7 @@ export async function POST(req: NextRequest) {
     console.log('[api/leads] emails agendados', {
       leadId: data.id,
       paraCliente: email,
-      paraEquipa: notificationEmail,
+      paraEquipa: notificationRecipients,
       temResendKey: Boolean(process.env.RESEND_API_KEY),
     })
 
@@ -181,7 +191,10 @@ export async function POST(req: NextRequest) {
           console.error(`[api/leads] lead ${data.id} ${label} Resend:`, result.value.error)
           return
         }
-        console.log(`[api/leads] lead ${data.id} ${label} enviado`)
+        console.log(
+          `[api/leads] lead ${data.id} ${label} enviado`,
+          'messageId' in result.value ? result.value.messageId : ''
+        )
       })
     } catch (dispatchError) {
       console.error(`[api/leads] lead ${data.id} timeout ou falha ao aguardar emails:`, dispatchError)

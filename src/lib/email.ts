@@ -184,7 +184,8 @@ export interface LeadRequestReceivedEmailData {
 }
 
 export interface LeadInternalNotificationEmailData {
-  to: string;
+  /** Um ou vários destinatários (ex.: vários emails na mesma notificação). */
+  to: string | string[];
   nome: string;
   email: string;
   empresa?: string | null;
@@ -431,7 +432,7 @@ export async function sendPurchaseThankYouEmail(data: PurchaseThankYouEmailData)
  */
 export async function sendLeadRequestReceivedEmail(
   data: LeadRequestReceivedEmailData
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; messageId?: string }> {
   try {
     const { to, nome, tipoProjeto } = data;
 
@@ -514,7 +515,7 @@ export async function sendLeadRequestReceivedEmail(
       return { success: false, error: result.error.message };
     }
 
-    return { success: true };
+    return { success: true, messageId: result.data?.id };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -525,7 +526,7 @@ export async function sendLeadRequestReceivedEmail(
  */
 export async function sendLeadInternalNotificationEmail(
   data: LeadInternalNotificationEmailData
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; messageId?: string }> {
   try {
     const {
       to,
@@ -619,12 +620,13 @@ export async function sendLeadInternalNotificationEmail(
       replyTo: REPLY_TO_COMERCIAL,
       subject: `Nova lead: ${assuntoTipo} - ${nome}`,
       html,
+      tags: [{ name: "workflow", value: "lead_internal" }],
     });
 
     if (result.error) {
       return { success: false, error: result.error.message };
     }
-    return { success: true };
+    return { success: true, messageId: result.data?.id };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
