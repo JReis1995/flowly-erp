@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
@@ -14,23 +15,35 @@ import {
   Inbox,
   Loader2,
   Mail,
+  Phone,
   Plus,
   Send,
+  Trash2,
   UserCircle2,
   Workflow,
   CheckCircle,
+  Briefcase,
 } from "lucide-react";
+import { leadOrigemBadge } from "@/lib/crm/leadOrigemBadge";
 import {
   assignLeadOwner,
   completeLeadTask,
   createLeadTask,
+  deleteLead,
   moveLeadStage,
   sendLeadEmail,
+  updateLeadHandoffNotes,
   type CrmLeadRow,
   type CrmLeadTask,
   type CrmTimelineItem,
+  type LeadHandoffNotes,
   type ProfileBasic,
 } from "../../_actions/leads";
+import {
+  applyFollowUpTemplateToLead,
+  listEmailTemplates,
+  type CrmEmailTemplateRow,
+} from "../../_actions/emailTemplates";
 
 function emailPayloadBody(payload: Record<string, unknown>): string | null {
   const b = payload.body ?? payload.message ?? payload.text;
@@ -47,13 +60,6 @@ type Props = {
   replyToAddress: string;
 };
 
-type EmailTemplate = {
-  id: string;
-  label: string;
-  subject: string;
-  message: (saudacao: string, nome: string, projeto: string) => string;
-};
-
 const stageOptions = [
   { id: "new", label: "Nova" },
   { id: "qualified", label: "Qualificada" },
@@ -61,72 +67,6 @@ const stageOptions = [
   { id: "won", label: "Ganha" },
   { id: "lost", label: "Perdida" },
 ] as const;
-
-const emailTemplates: EmailTemplate[] = [
-  {
-    id: "primeiro-contacto",
-    label: "Primeiro contacto",
-    subject: "Flowly | Confirmação de receção do pedido",
-    message: (saudacao, nome) =>
-      `${saudacao} ${nome},\n\n\nObrigado pelo seu contacto.\nRecebemos o seu pedido e estamos a analisar o contexto que nos enviou.\n\nAté 2 dias úteis partilharemos a nossa recomendação comercial, com próximos passos objetivos.\n\nSe quiser acrescentar informação entretanto, basta responder a este email.`,
-  },
-  {
-    id: "pedido-reuniao",
-    label: "Pedido de reunião",
-    subject: "Flowly | Proposta de reunião de alinhamento",
-    message: (saudacao, nome) =>
-      `${saudacao} ${nome},\n\n\nPara alinharmos prioridades e objetivos de negócio, propomos uma reunião de 20 a 30 minutos.\n\nPartilhe, por favor, 2 ou 3 horários disponíveis nos próximos dias para fazermos o agendamento.`,
-  },
-  {
-    id: "followup-48h",
-    label: "Follow-up 48h",
-    subject: "Flowly | Seguimento do seu pedido",
-    message: (saudacao, nome, projeto) =>
-      `${saudacao} ${nome},\n\n\nNo seguimento do seu pedido para ${projeto}, queremos confirmar se continua a ser prioritário avançarmos nesta fase.\n\nSe fizer sentido para si, indique-nos o melhor horário para alinharmos os próximos passos.`,
-  },
-  {
-    id: "envio-proposta",
-    label: "Envio de proposta",
-    subject: "Flowly | Envio de proposta comercial",
-    message: (saudacao, nome, projeto) =>
-      `${saudacao} ${nome},\n\n\nConforme alinhado, enviamos a proposta comercial para o projeto de ${projeto}.\n\nA proposta inclui âmbito de trabalho, abordagem de implementação, prazo estimado e condições comerciais.\n\nSe quiser, podemos agendar uma reunião breve para rever os pontos principais em conjunto.`,
-  },
-  {
-    id: "lembrete-proposta",
-    label: "Lembrete de proposta enviada",
-    subject: "Flowly | Seguimento da proposta enviada",
-    message: (saudacao, nome) =>
-      `${saudacao} ${nome},\n\n\nRetomamos o contacto para dar seguimento à proposta enviada anteriormente.\n\nCaso tenha dúvidas, comentários ou necessidade de ajustes, estamos disponíveis para adaptar a proposta ao seu contexto.`,
-  },
-  {
-    id: "pedido-info",
-    label: "Pedido de informação adicional",
-    subject: "Flowly | Informação complementar para avançarmos",
-    message: (saudacao, nome, projeto) =>
-      `${saudacao} ${nome},\n\n\nPara avançarmos com uma proposta mais precisa para ${projeto}, precisamos de alguns detalhes adicionais.\n\nEm particular: objetivos prioritários, número de utilizadores, integrações necessárias e prazo pretendido.\n\nCom esta informação, conseguimos apresentar-lhe uma proposta mais ajustada e objetiva.`,
-  },
-  {
-    id: "fecho-ganho",
-    label: "Confirmação de adjudicação",
-    subject: "Flowly | Confirmação de arranque do projeto",
-    message: (saudacao, nome, projeto) =>
-      `${saudacao} ${nome},\n\n\nAgradecemos a confiança na Flowly.\nConfirmamos a adjudicação e o arranque do projeto de ${projeto}.\n\nNos próximos passos partilharemos plano de execução, calendarização e ponto de contacto principal da equipa.`,
-  },
-  {
-    id: "fecho-perdido",
-    label: "Fecho sem avanço (cortesia)",
-    subject: "Flowly | Agradecimento pelo contacto",
-    message: (saudacao, nome) =>
-      `${saudacao} ${nome},\n\n\nObrigado pelo tempo e disponibilidade.\nCompreendemos que, neste momento, não seja a fase ideal para avançar.\n\nFicamos ao dispor para retomar o tema quando voltar a ser prioritário para a sua equipa.`,
-  },
-];
-
-function getSaudacao(nome: string) {
-  const first = nome.trim().split(/\s+/)[0]?.toLowerCase() ?? "";
-  const femaleExceptions = new Set(["dia", "noa", "luca", "nikita"]);
-  const isLikelyFemale = first.endsWith("a") && !femaleExceptions.has(first);
-  return isLikelyFemale ? "Cara" : "Caro";
-}
 
 function formatDate(value: string | null) {
   if (!value) return "—";
@@ -142,6 +82,8 @@ function ownerLabel(owner: ProfileBasic) {
 
 function timelineText(eventType: string, payload: Record<string, unknown>) {
   switch (eventType) {
+    case "lead_created":
+      return payload.manual === true ? "Lead criada manualmente no CRM." : "Lead registada.";
     case "owner_changed":
       return "Dono atualizado.";
     case "stage_changed":
@@ -233,14 +175,70 @@ export default function LeadDetailClient({ lead, owner, owners, tasks, timeline,
     const id = window.setInterval(() => setNowMs(Date.now()), 60_000);
     return () => window.clearInterval(id);
   }, []);
-  const defaultTemplate = emailTemplates[0];
-  const saudacao = getSaudacao(lead.nome);
-  const [selectedTemplate, setSelectedTemplate] = useState(defaultTemplate.id);
-  const [subject, setSubject] = useState(defaultTemplate.subject);
-  const [message, setMessage] = useState(defaultTemplate.message(saudacao, lead.nome, lead.tipo_projeto));
+
+  const [followTemplates, setFollowTemplates] = useState<CrmEmailTemplateRow[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(true);
+  const [selectedTemplate, setSelectedTemplate] = useState("");
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setTemplatesLoading(true);
+      setError(null);
+      const { data, error: listErr } = await listEmailTemplates("follow_up");
+      if (cancelled) return;
+      setTemplatesLoading(false);
+      if (listErr) {
+        setError(listErr);
+        setFollowTemplates([]);
+        setSelectedTemplate("");
+        setSubject("");
+        setMessage("");
+        return;
+      }
+      setFollowTemplates(data);
+      if (data.length === 0) {
+        setSelectedTemplate("");
+        setSubject("");
+        setMessage("");
+        return;
+      }
+      const firstId = data[0].id;
+      setSelectedTemplate(firstId);
+      const res = await applyFollowUpTemplateToLead(firstId, lead.id);
+      if (cancelled) return;
+      if (res.success) {
+        setSubject(res.subject);
+        setMessage(res.message);
+      } else {
+        setError(res.error ?? "Não foi possível aplicar o modelo.");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [lead.id]);
   const [taskTitle, setTaskTitle] = useState("");
   const [taskDueAt, setTaskDueAt] = useState("");
   const [requestExpanded, setRequestExpanded] = useState(false);
+
+  const handoffFromMeta = (lead.metadata?.handoff ?? {}) as Partial<LeadHandoffNotes>;
+  const [handoffEscopo, setHandoffEscopo] = useState(() => String(handoffFromMeta.escopo_resumo ?? ""));
+  const [handoffProximos, setHandoffProximos] = useState(() =>
+    String(handoffFromMeta.proximos_passos_delivery ?? "")
+  );
+  const [handoffContacto, setHandoffContacto] = useState(() =>
+    String(handoffFromMeta.contacto_delivery ?? "")
+  );
+
+  useEffect(() => {
+    const h = (lead.metadata?.handoff ?? {}) as Partial<LeadHandoffNotes>;
+    setHandoffEscopo(String(h.escopo_resumo ?? ""));
+    setHandoffProximos(String(h.proximos_passos_delivery ?? ""));
+    setHandoffContacto(String(h.contacto_delivery ?? ""));
+  }, [lead.id, lead.metadata]);
 
   const ownerLabelCurrent = owner ? ownerLabel(owner) : "Sem dono";
   const pendingTasks = useMemo(() => tasks.filter((t) => t.status === "pending"), [tasks]);
@@ -278,11 +276,17 @@ export default function LeadDetailClient({ lead, owner, owners, tasks, timeline,
   }
 
   function applyTemplate(templateId: string) {
-    const template = emailTemplates.find((t) => t.id === templateId);
-    if (!template) return;
-    setSelectedTemplate(templateId);
-    setSubject(template.subject);
-    setMessage(template.message(saudacao, lead.nome, lead.tipo_projeto));
+    startTransition(async () => {
+      setError(null);
+      setSelectedTemplate(templateId);
+      const res = await applyFollowUpTemplateToLead(templateId, lead.id);
+      if (!res.success) {
+        setError(res.error ?? "Não foi possível aplicar o modelo.");
+        return;
+      }
+      setSubject(res.subject);
+      setMessage(res.message);
+    });
   }
 
   function runAction(
@@ -305,6 +309,25 @@ export default function LeadDetailClient({ lead, owner, owners, tasks, timeline,
     });
   }
 
+  function confirmDeleteLead() {
+    if (
+      !window.confirm(
+        `Eliminar definitivamente a lead «${lead.nome}»? As tarefas e o histórico associados serão removidos. Esta ação não pode ser anulada.`
+      )
+    ) {
+      return;
+    }
+    startTransition(async () => {
+      setError(null);
+      const res = await deleteLead(lead.id);
+      if (!res.success) {
+        setError(res.error ?? "Não foi possível eliminar a lead.");
+        return;
+      }
+      router.push("/central-saas/leads");
+    });
+  }
+
   return (
     <div className="space-y-6">
       {error && <div className="px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>}
@@ -312,11 +335,43 @@ export default function LeadDetailClient({ lead, owner, owners, tasks, timeline,
         <div className="px-4 py-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-sm">{warning}</div>
       )}
 
+      <section className="brand-card p-4 border border-red-200 bg-red-50/50">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium text-brand-midnight">Eliminar esta lead</p>
+            <p className="text-xs text-brand-slate mt-1 max-w-xl">
+              Remove o registo na base de dados. Tarefas e histórico associados são removidos automaticamente. Esta ação
+              é irreversível.
+            </p>
+          </div>
+          <button
+            type="button"
+            disabled={pending}
+            onClick={confirmDeleteLead}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-red-300 bg-white text-red-800 text-sm font-medium hover:bg-red-50 disabled:opacity-50 shrink-0"
+          >
+            {pending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+            Eliminar lead
+          </button>
+        </div>
+      </section>
+
       <section className="grid grid-cols-1 md:grid-cols-4 gap-3">
         <div className="brand-card p-4">
           <p className="text-xs text-brand-slate mb-1">Lead</p>
           <p className="text-sm font-semibold text-brand-midnight">{lead.nome}</p>
           <p className="text-xs text-brand-slate mt-1">{lead.email}</p>
+          <p className="text-xs text-brand-slate mt-1 inline-flex items-center gap-1">
+            <Phone className="w-3 h-3 shrink-0" aria-hidden />
+            <span>{lead.telemovel?.trim() ? lead.telemovel.trim() : "Sem telemóvel registado"}</span>
+          </p>
+          <p className="mt-2">
+            <span
+              className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${leadOrigemBadge(lead.origem).className}`}
+            >
+              {leadOrigemBadge(lead.origem).label}
+            </span>
+          </p>
         </div>
         <div className="brand-card p-4">
           <p className="text-xs text-brand-slate mb-1">Projeto</p>
@@ -397,23 +452,98 @@ export default function LeadDetailClient({ lead, owner, owners, tasks, timeline,
         </div>
       </section>
 
+      <section className="brand-card p-5">
+        <h2 className="font-brand-primary font-semibold text-brand-midnight mb-2 inline-flex items-center gap-2">
+          <Briefcase className="w-4 h-4" />
+          Handoff comercial → delivery
+        </h2>
+        <p className="text-xs text-brand-slate mb-4 max-w-3xl">
+          Notas guardadas em <span className="font-mono">metadata.handoff</span> para a equipa de entrega (sem alterar o
+          modelo SQL).
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="md:col-span-3">
+            <label className="block text-sm text-brand-slate mb-1">Âmbito acordado / resumo</label>
+            <textarea
+              value={handoffEscopo}
+              onChange={(e) => setHandoffEscopo(e.target.value)}
+              rows={3}
+              className="w-full px-3 py-2 border border-brand-border rounded-lg text-sm"
+              placeholder="Ex.: CRM + integração API X, go-live em 8 semanas."
+            />
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-sm text-brand-slate mb-1">Próximos passos para delivery</label>
+            <textarea
+              value={handoffProximos}
+              onChange={(e) => setHandoffProximos(e.target.value)}
+              rows={3}
+              className="w-full px-3 py-2 border border-brand-border rounded-lg text-sm"
+              placeholder="Ex.: Kick-off, acesso a ambientes, prioridade do backlog."
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-brand-slate mb-1">Contacto / owner técnico</label>
+            <input
+              value={handoffContacto}
+              onChange={(e) => setHandoffContacto(e.target.value)}
+              className="w-full px-3 py-2 border border-brand-border rounded-lg text-sm"
+              placeholder="Email ou nome interno"
+            />
+          </div>
+        </div>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() =>
+            runAction(() =>
+              updateLeadHandoffNotes(lead.id, {
+                escopo_resumo: handoffEscopo,
+                proximos_passos_delivery: handoffProximos,
+                contacto_delivery: handoffContacto,
+              })
+            )
+          }
+          className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-brand-success text-white rounded-lg text-sm font-medium hover:opacity-90"
+        >
+          {pending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Briefcase className="w-4 h-4" />}
+          Guardar handoff
+        </button>
+      </section>
+
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div className="lg:col-span-2 brand-card p-5">
           <h2 className="font-brand-primary font-semibold text-brand-midnight mb-4">Enviar email (Resend)</h2>
           <div className="space-y-3">
             <div>
-              <label className="block text-sm text-brand-slate mb-1">Template</label>
+              <label className="block text-sm text-brand-slate mb-1">Modelo (follow-up)</label>
               <select
                 value={selectedTemplate}
                 onChange={(e) => applyTemplate(e.target.value)}
-                className="w-full px-3 py-2 border border-brand-border rounded-lg bg-white text-sm"
+                disabled={pending || templatesLoading || followTemplates.length === 0}
+                className="w-full px-3 py-2 border border-brand-border rounded-lg bg-white text-sm disabled:opacity-60"
               >
-                {emailTemplates.map((template) => (
-                  <option key={template.id} value={template.id}>
-                    {template.label}
-                  </option>
-                ))}
+                {templatesLoading ? (
+                  <option value="">A carregar modelos…</option>
+                ) : followTemplates.length === 0 ? (
+                  <option value="">Sem modelos — crie em Modelos de email</option>
+                ) : (
+                  followTemplates.map((template) => (
+                    <option key={template.id} value={template.id}>
+                      {template.area_label ? `${template.area_label}: ` : ""}
+                      {template.label}
+                    </option>
+                  ))
+                )}
               </select>
+              {followTemplates.length === 0 && !templatesLoading && (
+                <p className="text-xs text-amber-800 mt-1">
+                  Não há modelos de follow-up na base de dados.{" "}
+                  <Link href="/central-saas/leads/templates" className="text-brand-primary underline">
+                    Gerir modelos
+                  </Link>
+                </p>
+              )}
             </div>
             <input
               value={subject}
@@ -465,6 +595,12 @@ export default function LeadDetailClient({ lead, owner, owners, tasks, timeline,
             {requestExpanded ? <ChevronUp className="w-4 h-4 text-brand-slate" /> : <ChevronDown className="w-4 h-4 text-brand-slate" />}
           </button>
           <div className={`space-y-3 mb-6 ${requestExpanded ? "" : "max-h-48 overflow-hidden"}`}>
+            <div>
+              <p className="text-xs text-brand-slate">Telemóvel</p>
+              <p className="text-sm text-brand-midnight">
+                {lead.telemovel?.trim() ? lead.telemovel.trim() : "Não indicado"}
+              </p>
+            </div>
             <div>
               <p className="text-xs text-brand-slate">Objetivo principal</p>
               <p className="text-sm text-brand-midnight">
@@ -537,17 +673,6 @@ export default function LeadDetailClient({ lead, owner, owners, tasks, timeline,
           <Mail className="w-4 h-4" />
           Histórico de correio
         </h2>
-        <p className="text-xs text-brand-slate mb-4 max-w-3xl">
-          Os envios feitos a partir desta página ficam com o texto completo guardado. Para as respostas da lead
-          aparecerem aqui e uma cópia chegar à caixa comercial: no Resend, adiciona um Webhook com o evento{" "}
-          <span className="font-mono text-brand-midnight">email.received</span> para{" "}
-          <span className="font-mono text-brand-midnight break-all">/api/webhooks/resend</span>, define{" "}
-          <span className="font-mono text-brand-midnight">RESEND_WEBHOOK_SECRET</span> no servidor (segredo do webhook) e
-          garante domínio de receiving + MX à Resend em{" "}
-          <span className="font-mono text-brand-midnight break-all">inbound.flowly.pt</span>. Opcional:{" "}
-          <span className="font-mono text-brand-midnight">EMAIL_INBOUND_FORWARD_TO</span> para onde reencaminhar a cópia
-          (por defeito usa a caixa da assinatura).
-        </p>
         {mailItems.length === 0 ? (
           <p className="text-sm text-brand-slate">Ainda não há mensagens de correio nesta lead.</p>
         ) : (

@@ -193,6 +193,8 @@ export interface LeadInternalNotificationEmailData {
   to: string | string[];
   nome: string;
   email: string;
+  /** Telemóvel quando existir (leads antigas podem não ter). */
+  telemovel?: string | null;
   empresa?: string | null;
   tipoProjeto: string;
   /** Texto livre quando `tipoProjeto` é `outro`. */
@@ -213,6 +215,11 @@ export interface LeadFollowUpEmailData {
   subject: string;
   message: string;
   replyTo?: string | null;
+  /**
+   * Quando definido (ex.: comercial+lead-xxxxxxxx@inbound...), substitui EMAIL_FROM_COMERCIAL.
+   * Gmail e outros clientes respondem ao remetente «De», não ao Reply-To — sem isto o inbound perde o tag +lead-.
+   */
+  from?: string | null;
 }
 
 /**
@@ -545,6 +552,7 @@ export async function sendLeadInternalNotificationEmail(
       to,
       nome,
       email,
+      telemovel,
       empresa,
       tipoProjeto,
       tipoProjetoOutro,
@@ -599,6 +607,7 @@ export async function sendLeadInternalNotificationEmail(
               <div style="${STYLES.infoBox}">
                 <p style="${STYLES.text}"><strong style="${STYLES.strong}">Nome:</strong> ${escapeHtml(nome)}</p>
                 <p style="${STYLES.text}"><strong style="${STYLES.strong}">Email:</strong> ${escapeHtml(email)}</p>
+                <p style="${STYLES.text}"><strong style="${STYLES.strong}">Telemóvel:</strong> ${telemovel?.trim() ? escapeHtml(telemovel.trim()) : "Não indicado"}</p>
                 <p style="${STYLES.text}"><strong style="${STYLES.strong}">Empresa:</strong> ${escapeHtml(empresa || 'Não indicado')}</p>
                 <p style="${STYLES.text}"><strong style="${STYLES.strong}">Tipo de projeto:</strong> ${tipoProjetoLinha}</p>
                 <p style="${STYLES.text}"><strong style="${STYLES.strong}">Objetivo principal:</strong> ${escapeHtml(objetivoPrincipal || 'Não indicado')}</p>
@@ -656,6 +665,7 @@ export async function sendLeadFollowUpEmail(
     const subject = data.subject.trim();
     const message = data.message.trim();
     const replyTo = data.replyTo?.trim() || REPLY_TO_COMERCIAL;
+    const fromEmail = data.from?.trim() || FROM_COMERCIAL;
 
     if (!to || !subject || message.length < 3) {
       return { success: false, error: "Dados de email inválidos." };
@@ -712,7 +722,7 @@ export async function sendLeadFollowUpEmail(
               <p style="${STYLES.footerText}">Flowly - Software e Websites Personalizados</p>
               <p style="${STYLES.footerText}">
                 © ${CURRENT_YEAR} Flowly. Todos os direitos reservados.<br/>
-                <a href="mailto:${FROM_COMERCIAL}" style="${STYLES.link}">${FROM_COMERCIAL}</a>
+                <a href="mailto:${escapeHtml(fromEmail)}" style="${STYLES.link}">${escapeHtml(fromEmail)}</a>
               </p>
             </td>
           </tr>
@@ -724,7 +734,7 @@ export async function sendLeadFollowUpEmail(
 </html>`;
 
     const result = await getResend().emails.send({
-      from: `Flowly Comercial <${FROM_COMERCIAL}>`,
+      from: `Flowly Comercial <${fromEmail}>`,
       to,
       replyTo,
       subject,

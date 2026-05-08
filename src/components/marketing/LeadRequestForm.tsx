@@ -2,10 +2,17 @@
 
 import { FormEvent, useEffect, useRef, useState } from 'react'
 import { trackMarketingEvent } from '@/lib/marketing/tracking'
+import {
+  isValidTelemovelPt,
+  sanitizeTelemovel,
+  TELEMOVEL_ERRO_FORMATO,
+  TELEMOVEL_ERRO_OBRIGATORIO,
+} from '@/lib/crm/telemovelPt'
 
 type FormState = {
   nome: string
   email: string
+  telemovel: string
   empresa: string
   tipoProjeto: string
   tipoProjetoOutro: string
@@ -21,6 +28,7 @@ type FormState = {
 const INITIAL_STATE: FormState = {
   nome: '',
   email: '',
+  telemovel: '',
   empresa: '',
   tipoProjeto: 'crm',
   tipoProjetoOutro: '',
@@ -38,6 +46,7 @@ function normalizeFormState(partial: Partial<FormState>): FormState {
   return {
     nome: partial.nome ?? '',
     email: partial.email ?? '',
+    telemovel: partial.telemovel ?? '',
     empresa: partial.empresa ?? '',
     tipoProjeto: partial.tipoProjeto ?? INITIAL_STATE.tipoProjeto,
     tipoProjetoOutro: partial.tipoProjetoOutro ?? '',
@@ -174,6 +183,17 @@ export default function LeadRequestForm({ onSuccess }: LeadRequestFormProps) {
     trackMarketingEvent('cta_click_primary', { cta: 'lead_form_submit' })
 
     const payload = normalizeFormState(form)
+    const telemovelNorm = sanitizeTelemovel(payload.telemovel)
+    if (!telemovelNorm) {
+      setError(TELEMOVEL_ERRO_OBRIGATORIO)
+      setSubmitting(false)
+      return
+    }
+    if (!isValidTelemovelPt(telemovelNorm)) {
+      setError(TELEMOVEL_ERRO_FORMATO)
+      setSubmitting(false)
+      return
+    }
 
     if (payload.tipoProjeto === 'outro' && payload.tipoProjetoOutro.trim().length < 3) {
       setError('Indica qual é o tipo de projeto pretendido.')
@@ -193,11 +213,17 @@ export default function LeadRequestForm({ onSuccess }: LeadRequestFormProps) {
       return
     }
 
+    if (payload.empresa.trim().length < 2) {
+      setError('Indica o nome da empresa ou organização.')
+      setSubmitting(false)
+      return
+    }
+
     try {
       const res = await fetch('/api/leads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...payload, telemovel: telemovelNorm }),
       })
       const json = await res.json()
 
@@ -229,7 +255,9 @@ export default function LeadRequestForm({ onSuccess }: LeadRequestFormProps) {
 
   const canGoToStepTwo =
     (form.nome ?? '').trim().length >= 2 &&
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((form.email ?? '').trim())
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((form.email ?? '').trim()) &&
+    isValidTelemovelPt(sanitizeTelemovel(form.telemovel ?? '')) &&
+    (form.empresa ?? '').trim().length >= 2
 
   return (
     <form onSubmit={onSubmit} className="space-y-5">
@@ -274,12 +302,29 @@ export default function LeadRequestForm({ onSuccess }: LeadRequestFormProps) {
                 className="w-full px-3 py-2 border border-brand-border rounded-lg font-brand-secondary text-brand-midnight placeholder:text-brand-slate bg-brand-white"
               />
             </label>
+            <label className="block md:col-span-2">
+              <span className="block text-sm text-brand-midnight font-brand-secondary mb-1">Telemóvel</span>
+              <input
+                required
+                inputMode="tel"
+                autoComplete="tel"
+                value={form.telemovel}
+                onChange={(e) => updateField('telemovel', e.target.value)}
+                placeholder="Ex.: 912 345 678 ou +351 912 345 678"
+                className="w-full px-3 py-2 border border-brand-border rounded-lg font-brand-secondary text-brand-midnight placeholder:text-brand-slate bg-brand-white"
+              />
+              <span className="block text-xs text-brand-slate mt-1 font-brand-secondary">
+                Número português (9 dígitos). Obrigatório para te contactarmos.
+              </span>
+            </label>
           </div>
 
           <div className="bg-brand-white border border-brand-border rounded-xl p-4 grid grid-cols-1 gap-4">
             <label className="block">
-              <span className="block text-sm text-brand-midnight font-brand-secondary mb-1">Empresa (opcional)</span>
+              <span className="block text-sm text-brand-midnight font-brand-secondary mb-1">Empresa ou organização</span>
               <input
+                required
+                minLength={2}
                 value={form.empresa}
                 onChange={(e) => updateField('empresa', e.target.value)}
                 placeholder="Nome da empresa"
@@ -403,6 +448,9 @@ export default function LeadRequestForm({ onSuccess }: LeadRequestFormProps) {
                 Confirmação do pedido
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-brand-slate font-brand-secondary">
+                <p>
+                  <strong className="text-brand-midnight">Telemóvel:</strong> {sanitizeTelemovel(form.telemovel) || '—'}
+                </p>
                 <p>
                   <strong className="text-brand-midnight">Projeto:</strong>{' '}
                   {isOutroProjeto

@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { sendLeadInternalNotificationEmail, sendLeadRequestReceivedEmail } from '@/lib/email'
+import {
+  isValidTelemovelPt,
+  MAX_TELEMOVEL_CHARS,
+  sanitizeTelemovel,
+  TELEMOVEL_ERRO_FORMATO,
+  TELEMOVEL_ERRO_OBRIGATORIO,
+} from '@/lib/crm/telemovelPt'
 
 type LeadPayload = {
   nome?: string
   email?: string
+  telemovel?: string
   empresa?: string
   tipoProjeto?: string
   tipoProjetoOutro?: string
@@ -65,6 +73,7 @@ export async function POST(req: NextRequest) {
 
     const nome = sanitizeText(body.nome, 120)
     const email = sanitizeText(body.email, 180).toLowerCase()
+    const telemovel = sanitizeTelemovel(sanitizeText(body.telemovel, MAX_TELEMOVEL_CHARS))
     const empresa = sanitizeText(body.empresa, 160)
     const tipoProjeto = sanitizeText(body.tipoProjeto, 120)
     const tipoProjetoOutro = sanitizeText(body.tipoProjetoOutro, 160)
@@ -82,8 +91,20 @@ export async function POST(req: NextRequest) {
     if (!email || !isValidEmail(email)) {
       return NextResponse.json({ error: 'Email inválido.' }, { status: 400 })
     }
+    if (!telemovel) {
+      return NextResponse.json({ error: TELEMOVEL_ERRO_OBRIGATORIO }, { status: 400 })
+    }
+    if (!isValidTelemovelPt(telemovel)) {
+      return NextResponse.json({ error: TELEMOVEL_ERRO_FORMATO }, { status: 400 })
+    }
     if (!tipoProjeto) {
       return NextResponse.json({ error: 'Tipo de projeto é obrigatório.' }, { status: 400 })
+    }
+    if (!empresa || empresa.length < 2) {
+      return NextResponse.json(
+        { error: 'Indica o nome da empresa ou organização (mínimo 2 caracteres).' },
+        { status: 400 }
+      )
     }
     if (tipoProjeto === 'outro' && tipoProjetoOutro.length < 3) {
       return NextResponse.json(
@@ -117,7 +138,8 @@ export async function POST(req: NextRequest) {
       .insert({
         nome,
         email,
-        empresa: empresa || null,
+        telemovel,
+        empresa,
         tipo_projeto: tipoProjeto,
         orcamento: orcamento || null,
         descricao,
@@ -156,7 +178,8 @@ export async function POST(req: NextRequest) {
         to: notificationRecipients,
         nome,
         email,
-        empresa: empresa || null,
+        telemovel,
+        empresa,
         tipoProjeto,
         tipoProjetoOutro: tipoProjeto === 'outro' ? tipoProjetoOutro || null : null,
         objetivoPrincipal: objetivoPrincipal || null,

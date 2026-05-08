@@ -10,6 +10,7 @@ import {
   ArrowUpRight,
   Euro,
   ArrowLeft,
+  Mail,
 } from "lucide-react";
 
 export default async function AdminDashboardPage() {
@@ -225,6 +226,13 @@ export default async function AdminDashboardPage() {
           >
             <Workflow className="w-4 h-4" />
             CRM Leads
+          </a>
+          <a
+            href="/central-saas/leads/templates"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-white border-2 border-brand-midnight text-brand-midnight rounded-lg font-brand-secondary font-medium hover:bg-brand-light transition-colors"
+          >
+            <Mail className="w-4 h-4" />
+            Modelos de email CRM
           </a>
           <a
             href="/central-saas/pacotes-ia"
